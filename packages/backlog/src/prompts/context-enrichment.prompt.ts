@@ -1,12 +1,12 @@
 /**
- * Step 4: RAG Enrichment Prompt
+ * Prompt template for ContextEnrichment phase
  *
  * Generates a context summary from RAG-retrieved documents.
  */
 
 import { ChatPromptTemplate } from "@langchain/core/prompts";
 
-export const ENRICH_SYSTEM_PROMPT = `You are an expert at synthesizing relevant context for Product Backlog Items (PBIs).
+export const CONTEXT_ENRICHMENT_SYSTEM_PROMPT = `You are an expert at synthesizing relevant context for Product Backlog Items (PBIs).
 
 Given a PBI and relevant documents retrieved from the codebase, create a concise context summary that will help developers understand:
 1. What similar work has been done before
@@ -17,8 +17,8 @@ Given a PBI and relevant documents retrieved from the codebase, create a concise
 Be specific and actionable. Reference specific documents where relevant.
 Keep the summary focused and under 300 words.`;
 
-export const enrichSummaryPrompt = ChatPromptTemplate.fromMessages([
-  ["system", ENRICH_SYSTEM_PROMPT],
+export const contextEnrichmentPrompt = ChatPromptTemplate.fromMessages([
+  ["system", CONTEXT_ENRICHMENT_SYSTEM_PROMPT],
   [
     "human",
     `PBI Title: {title}

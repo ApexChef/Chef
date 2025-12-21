@@ -2,9 +2,16 @@
  * Graph Node exports
  */
 
-// Core pipeline nodes
+// EventDetection phase
 export { detectEventNode } from "./detect-event.node.js";
+
+// CandidateExtraction phase
 export { extractCandidatesNode } from "./extract-candidates.node.js";
+
+// DependencyMapping phase
+export { dependencyMappingNode, getSiblingContext } from "./dependency-mapping.node.js";
+
+// ConfidenceScoring phase
 export { scoreConfidenceNode, scoreMultipleCandidates } from "./score-confidence.node.js";
 
 // HITL routing nodes
@@ -19,14 +26,14 @@ export {
 } from "./request-context.node.js";
 export { rescoreWithContextNode } from "./rescore-with-context.node.js";
 
-// Step 4: Enrichment
+// ContextEnrichment phase
 export { enrichContextNode } from "./enrich-context.node.js";
 
-// Step 4.5: Consolidate Description
+// ConsolidateDescription phase
 export { consolidateDescriptionNode } from "./consolidate-description.node.js";
 
-// Step 5: Risk Analysis
+// RiskAnalysis phase
 export { riskAnalysisNode } from "./risk-analysis.node.js";
 
-// Step 6: Export PBIs
+// Export phase
 export { exportPBINode } from "./export-pbi.node.js";

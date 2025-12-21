@@ -1,31 +1,38 @@
 /**
- * Score Confidence Node (Step 3)
+ * ConfidenceScoring Node
  *
  * Evaluates each PBI candidate's quality and assigns confidence scores.
+ * Includes sibling context from DependencyMapping phase.
  */
 
 import type { BaseChatModel } from "@langchain/core/language_models/chat_models";
 import { LLMRouter } from "@chef/core";
 import type { PipelineStateType } from "../../state/index.js";
-import type { PBICandidate } from "../../../schemas/index.js";
+import type { PBICandidate, Dependency } from "../../../schemas/index.js";
 import {
   ScoredCandidateSchema,
   type ScoredCandidate,
   type ScoreDistribution,
 } from "../../../schemas/scoring.schema.js";
-import { step3Prompt } from "../../../prompts/step3-prompt.js";
+import { confidenceScoringPrompt } from "../../../prompts/index.js";
 import { getScoreLabel } from "../../../constants/index.js";
+import { getSiblingContext } from "./dependency-mapping.node.js";
 
 /**
- * Score a single PBI candidate
+ * Score a single PBI candidate with sibling context
  */
 async function scoreSingleCandidate(
   candidate: PBICandidate,
   eventType: string,
-  model: BaseChatModel
+  model: BaseChatModel,
+  allCandidates: PBICandidate[],
+  dependencies: Dependency[]
 ): Promise<ScoredCandidate> {
   const structuredModel = model.withStructuredOutput(ScoredCandidateSchema);
-  const chain = step3Prompt.pipe(structuredModel);
+  const chain = confidenceScoringPrompt.pipe(structuredModel);
+
+  // Get sibling context from dependency mapping
+  const siblingContext = getSiblingContext(candidate.id, allCandidates, dependencies);
 
   const result = await chain.invoke({
     candidateId: candidate.id,
@@ -34,6 +41,7 @@ async function scoreSingleCandidate(
     description: candidate.consolidatedDescription ?? candidate.extractedDescription,
     rawContext: candidate.rawContext,
     eventType,
+    siblingContext,
   });
 
   return result as ScoredCandidate;
@@ -55,7 +63,7 @@ function calculateDistribution(scores: number[]): ScoreDistribution {
 /**
  * Score PBI candidates for confidence
  *
- * Reads: candidates, eventType
+ * Reads: candidates, eventType, dependencies
  * Writes: scoredCandidates, averageScore, metadata.stepTimings
  */
 export async function scoreConfidenceNode(
@@ -68,7 +76,7 @@ export async function scoreConfidenceNode(
 
   // Handle empty candidates
   if (state.candidates.length === 0) {
-    console.log("[Graph] scoreConfidence: No candidates to score");
+    console.log("[ConfidenceScoring] No candidates to score");
     return {
       scoredCandidates: [],
       averageScore: 0,
@@ -84,19 +92,31 @@ export async function scoreConfidenceNode(
 
   const model = router.getModel() as BaseChatModel;
   const scoredCandidates: ScoredCandidate[] = [];
+  const dependencies = state.dependencies || [];
+
+  // Log if sibling context will be injected
+  if (dependencies.length > 0) {
+    console.log(`[ConfidenceScoring] Using ${dependencies.length} dependencies for sibling context`);
+  }
 
   // Score each candidate individually
   for (const candidate of state.candidates) {
-    console.log(`[Graph] Scoring ${candidate.id}...`);
+    console.log(`[ConfidenceScoring] Scoring ${candidate.id}...`);
 
     try {
-      const scored = await scoreSingleCandidate(candidate, state.eventType, model);
+      const scored = await scoreSingleCandidate(
+        candidate,
+        state.eventType,
+        model,
+        state.candidates,
+        dependencies
+      );
       scoredCandidates.push(scored);
 
       const label = getScoreLabel(scored.overallScore);
-      console.log(`[Graph]   Score: ${scored.overallScore}/100 (${label})`);
+      console.log(`[ConfidenceScoring]   Score: ${scored.overallScore}/100 (${label})`);
     } catch (error) {
-      console.error(`[Graph]   Failed to score ${candidate.id}:`, error);
+      console.error(`[ConfidenceScoring]   Failed to score ${candidate.id}:`, error);
       // Continue with other candidates
     }
   }
@@ -127,11 +147,16 @@ export async function scoreConfidenceNode(
 /**
  * Score candidates with context (used by rescore-with-context node)
  * Exported for reuse in rescoring flow.
+ *
+ * Note: This function doesn't have access to dependencies, so sibling context
+ * is not injected during rescoring. This is intentional as rescoring happens
+ * after human context is added, and the original dependencies are already known.
  */
 export async function scoreMultipleCandidates(
   candidates: PBICandidate[],
   eventType: string,
-  router: LLMRouter
+  router: LLMRouter,
+  dependencies: Dependency[] = []
 ): Promise<{ scoredCandidates: ScoredCandidate[]; averageScore: number }> {
   if (candidates.length === 0) {
     return { scoredCandidates: [], averageScore: 0 };
@@ -142,10 +167,16 @@ export async function scoreMultipleCandidates(
 
   for (const candidate of candidates) {
     try {
-      const scored = await scoreSingleCandidate(candidate, eventType, model);
+      const scored = await scoreSingleCandidate(
+        candidate,
+        eventType,
+        model,
+        candidates,
+        dependencies
+      );
       scoredCandidates.push(scored);
     } catch (error) {
-      console.error(`[Graph] Failed to score ${candidate.id}:`, error);
+      console.error(`[ConfidenceScoring] Failed to score ${candidate.id}:`, error);
     }
   }
 

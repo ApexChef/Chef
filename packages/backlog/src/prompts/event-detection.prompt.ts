@@ -1,10 +1,10 @@
 /**
- * Prompt template for Step 1: Event Detection
+ * Prompt template for EventDetection phase
  */
 
 import { ChatPromptTemplate } from "@langchain/core/prompts";
 
-export const STEP1_SYSTEM_PROMPT = `You are a meeting classifier. Analyze meeting notes and determine the type of meeting.
+export const EVENT_DETECTION_SYSTEM_PROMPT = `You are a meeting classifier. Analyze meeting notes and determine the type of meeting.
 
 Meeting types:
 - refinement: Backlog grooming, discussing user stories, acceptance criteria, estimation, breaking down work items
@@ -21,8 +21,8 @@ Your task:
 
 Respond with valid JSON only. No explanation text.`;
 
-export const step1Prompt = ChatPromptTemplate.fromMessages([
-  ["system", STEP1_SYSTEM_PROMPT],
+export const eventDetectionPrompt = ChatPromptTemplate.fromMessages([
+  ["system", EVENT_DETECTION_SYSTEM_PROMPT],
   [
     "human",
     `Analyze these meeting notes and classify the meeting type:

@@ -5,6 +5,7 @@ import {
   createPipelineGraphWithHITL,
   type PipelineStateType,
 } from "@chef/backlog";
+import { LLMRouter } from "@chef/core";
 
 export default class BacklogProcess extends Command {
   static override args = {
@@ -31,9 +32,8 @@ export default class BacklogProcess extends Command {
     }),
     provider: Flags.string({
       char: "p",
-      description: "LLM provider to use",
+      description: "LLM provider to use (auto-detects based on API keys if not specified)",
       options: ["anthropic", "ollama"],
-      default: "ollama",
     }),
     model: Flags.string({
       char: "m",
@@ -62,20 +62,26 @@ export default class BacklogProcess extends Command {
     const meetingNotes = readFileSync(args.input, "utf-8");
     this.log(`Processing: ${args.input} (${meetingNotes.length} chars)`);
 
-    if (flags["dry-run"]) {
-      this.log("Dry run mode - skipping LLM pipeline");
-      this.log(`Provider: ${flags.provider}`);
-      this.log(`Model: ${flags.model || "(default)"}`);
-      return;
+    // Configure LLM via environment variables (only if explicitly provided)
+    if (flags.provider) {
+      process.env.LLM_PROVIDER = flags.provider;
     }
-
-    // Configure LLM via environment variables
-    process.env.LLM_PROVIDER = flags.provider;
     if (flags.model) {
       process.env.LLM_MODEL = flags.model;
     }
 
-    this.log(`Provider: ${flags.provider}`);
+    // Get the actual provider/model that will be used (after auto-detection)
+    const router = new LLMRouter();
+    const routerConfig = router.getConfig();
+
+    if (flags["dry-run"]) {
+      this.log("Dry run mode - skipping LLM pipeline");
+      this.log(`Provider: ${routerConfig.provider}`);
+      this.log(`Model: ${routerConfig.model}`);
+      return;
+    }
+
+    this.log(`Provider: ${routerConfig.provider}`);
     this.log(`Model: ${flags.model || "(default for provider)"}`);
     this.log("");
 

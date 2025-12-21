@@ -69,11 +69,12 @@ export async function rescoreWithContextNode(
     );
   }
 
-  // Re-score the enriched candidates
+  // Re-score the enriched candidates (including sibling context from dependencies)
   const result = await scoreMultipleCandidates(
     enrichedCandidates,
     state.eventType,
-    router
+    router,
+    state.dependencies || []
   );
 
   // Merge new scores with existing scores (keep non-rescored ones)

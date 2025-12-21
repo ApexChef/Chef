@@ -1,10 +1,49 @@
 /**
  * Pipeline prompt templates
+ *
+ * Phase-based naming convention for all prompts.
  */
 
-export { STEP1_SYSTEM_PROMPT, step1Prompt } from "./step1-prompt.js";
-export { STEP2_SYSTEM_PROMPT, step2Prompt } from "./step2-prompt.js";
-export { STEP3_SYSTEM_PROMPT, step3Prompt } from "./step3-prompt.js";
-export { CONSOLIDATE_SYSTEM_PROMPT, consolidatePrompt } from "./step4-consolidate-prompt.js";
-export { ENRICH_SYSTEM_PROMPT, enrichSummaryPrompt, formatRAGResults } from "./step4-enrich-prompt.js";
-export { RISK_ANALYSIS_SYSTEM_PROMPT, riskAnalysisPrompt } from "./step5-risk-prompt.js";
+// EventDetection phase
+export {
+  EVENT_DETECTION_SYSTEM_PROMPT,
+  eventDetectionPrompt,
+} from "./event-detection.prompt.js";
+
+// CandidateExtraction phase
+export {
+  CANDIDATE_EXTRACTION_SYSTEM_PROMPT,
+  candidateExtractionPrompt,
+} from "./candidate-extraction.prompt.js";
+
+// ConfidenceScoring phase
+export {
+  CONFIDENCE_SCORING_SYSTEM_PROMPT,
+  confidenceScoringPrompt,
+} from "./confidence-scoring.prompt.js";
+
+// ConsolidateDescription phase
+export {
+  CONSOLIDATE_DESCRIPTION_SYSTEM_PROMPT,
+  consolidateDescriptionPrompt,
+} from "./consolidate-description.prompt.js";
+
+// ContextEnrichment phase
+export {
+  CONTEXT_ENRICHMENT_SYSTEM_PROMPT,
+  contextEnrichmentPrompt,
+  formatRAGResults,
+} from "./context-enrichment.prompt.js";
+
+// DependencyMapping phase
+export {
+  DEPENDENCY_MAPPING_SYSTEM_PROMPT,
+  dependencyMappingPrompt,
+  formatCandidatesForDependencyAnalysis,
+} from "./dependency-mapping.prompt.js";
+
+// RiskAnalysis phase
+export {
+  RISK_ANALYSIS_SYSTEM_PROMPT,
+  riskAnalysisPrompt,
+} from "./risk-analysis.prompt.js";

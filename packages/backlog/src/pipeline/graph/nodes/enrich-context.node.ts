@@ -1,5 +1,5 @@
 /**
- * Enrich Context Node (Step 4)
+ * ContextEnrichment Node
  *
  * Enriches approved PBIs with RAG context from:
  * - Similar past work (PBIs)
@@ -18,7 +18,7 @@ import type {
   LessonLearned,
   RAGResult,
 } from "../../../schemas/index.js";
-import { enrichSummaryPrompt, formatRAGResults } from "../../../prompts/index.js";
+import { contextEnrichmentPrompt, formatRAGResults } from "../../../prompts/index.js";
 import { LLMRouter } from "@chef/core";
 import { getRAGRetriever } from "@chef/core";
 
@@ -150,7 +150,7 @@ export async function enrichContextNode(
   // Initialize LLM for summary generation
   const router = new LLMRouter();
   const model = router.getModel({ temperature: 0.3 }) as BaseChatModel;
-  const chain = enrichSummaryPrompt.pipe(model).pipe(new StringOutputParser());
+  const chain = contextEnrichmentPrompt.pipe(model).pipe(new StringOutputParser());
 
   const enrichments: PBIEnrichment[] = [];
 
@@ -159,11 +159,11 @@ export async function enrichContextNode(
     const scored = state.scoredCandidates.find((c) => c.candidateId === candidateId);
 
     if (!candidate) {
-      console.warn(`[Step 4] Candidate ${candidateId} not found, skipping`);
+      console.warn(`[ContextEnrichment] Candidate ${candidateId} not found, skipping`);
       continue;
     }
 
-    console.log(`[Step 4] Enriching ${candidateId}: "${candidate.title}"`);
+    console.log(`[ContextEnrichment] Enriching ${candidateId}: "${candidate.title}"`);
 
     const description = candidate.consolidatedDescription || candidate.extractedDescription;
     const queryTerms = [candidate.title, candidate.type, description.slice(0, 100)];
@@ -186,10 +186,10 @@ export async function enrichContextNode(
         technicalDocResults = ragResults.technicalDocs;
 
         console.log(
-          `[Step 4]   Retrieved: ${similarWorkResults.length} similar, ${adrResults.length} ADRs, ${technicalDocResults.length} docs`
+          `[ContextEnrichment]   Retrieved: ${similarWorkResults.length} similar, ${adrResults.length} ADRs, ${technicalDocResults.length} docs`
         );
       } catch (error) {
-        console.warn(`[Step 4]   RAG query failed for ${candidateId}:`, error);
+        console.warn(`[ContextEnrichment]   RAG query failed for ${candidateId}:`, error);
       }
     }
 
@@ -218,9 +218,9 @@ export async function enrichContextNode(
           technicalDocs: formatRAGResults(technicalDocResults),
         });
 
-        console.log(`[Step 4]   Generated summary (${contextSummary.length} chars)`);
+        console.log(`[ContextEnrichment]   Generated summary (${contextSummary.length} chars)`);
       } catch (error) {
-        console.warn(`[Step 4]   Summary generation failed for ${candidateId}:`, error);
+        console.warn(`[ContextEnrichment]   Summary generation failed for ${candidateId}:`, error);
         contextSummary = "Context summary generation failed. Please review the retrieved documents manually.";
       }
     }

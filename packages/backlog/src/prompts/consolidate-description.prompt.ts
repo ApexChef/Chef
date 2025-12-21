@@ -1,12 +1,12 @@
 /**
- * Prompt template for Step 4.5: Consolidate Description
+ * Prompt template for ConsolidateDescription phase
  *
  * Creates a unified description from LLM-extracted text and human-provided context
  */
 
 import { ChatPromptTemplate } from "@langchain/core/prompts";
 
-export const CONSOLIDATE_SYSTEM_PROMPT = `You are a technical writer specializing in Product Backlog Items (PBIs). Your task is to create a clear, comprehensive description by combining:
+export const CONSOLIDATE_DESCRIPTION_SYSTEM_PROMPT = `You are a technical writer specializing in Product Backlog Items (PBIs). Your task is to create a clear, comprehensive description by combining:
 1. The original LLM-extracted description from meeting notes
 2. Additional context provided by a human reviewer
 
@@ -20,8 +20,8 @@ Create a consolidated description that:
 
 Output ONLY the consolidated description text. No headers, labels, or metadata.`;
 
-export const consolidatePrompt = ChatPromptTemplate.fromMessages([
-  ["system", CONSOLIDATE_SYSTEM_PROMPT],
+export const consolidateDescriptionPrompt = ChatPromptTemplate.fromMessages([
+  ["system", CONSOLIDATE_DESCRIPTION_SYSTEM_PROMPT],
   [
     "human",
     `PBI Title: {title}

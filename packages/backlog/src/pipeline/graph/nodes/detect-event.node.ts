@@ -1,5 +1,5 @@
 /**
- * Detect Event Node (Step 1)
+ * EventDetection Node
  *
  * Classifies meeting notes into one of the meeting types:
  * refinement, planning, standup, retrospective, or other
@@ -9,7 +9,7 @@ import type { BaseChatModel } from "@langchain/core/language_models/chat_models"
 import { LLMRouter } from "@chef/core";
 import type { PipelineStateType } from "../../state/index.js";
 import { EventDetectionSchema } from "../../../schemas/index.js";
-import { step1Prompt } from "../../../prompts/index.js";
+import { eventDetectionPrompt } from "../../../prompts/index.js";
 
 /**
  * Detect the type of meeting from notes
@@ -30,7 +30,7 @@ export async function detectEventNode(
   const structuredModel = model.withStructuredOutput(EventDetectionSchema);
 
   // Create and execute chain
-  const chain = step1Prompt.pipe(structuredModel);
+  const chain = eventDetectionPrompt.pipe(structuredModel);
   const result = await chain.invoke({ meetingNotes: state.meetingNotes });
 
   const elapsed = Date.now() - startTime;

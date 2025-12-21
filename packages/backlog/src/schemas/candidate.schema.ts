@@ -1,5 +1,5 @@
 /**
- * Schema for Step 2: Candidate Extraction
+ * Schema for CandidateExtraction phase
  */
 
 import { z } from "zod";
@@ -42,6 +42,17 @@ export const PBICandidateSchema = z.object({
     .string()
     .optional()
     .describe("LLM-generated summary combining extracted description and human context"),
+
+  // DependencyMapping phase fields
+  sequence: z
+    .number()
+    .optional()
+    .describe("Suggested execution order (1 = first). Set by DependencyMapping."),
+
+  canParallelize: z
+    .boolean()
+    .optional()
+    .describe("True if no blocking dependencies. Set by DependencyMapping."),
 });
 
 export type PBICandidate = z.infer<typeof PBICandidateSchema>;

@@ -1,5 +1,5 @@
 /**
- * Extract Candidates Node (Step 2)
+ * CandidateExtraction Node
  *
  * Extracts PBI candidates from meeting notes
  */
@@ -8,7 +8,7 @@ import type { BaseChatModel } from "@langchain/core/language_models/chat_models"
 import { LLMRouter } from "@chef/core";
 import type { PipelineStateType } from "../../state/index.js";
 import { CandidateExtractionSchema } from "../../../schemas/index.js";
-import { step2Prompt } from "../../../prompts/index.js";
+import { candidateExtractionPrompt } from "../../../prompts/index.js";
 
 /**
  * Extract PBI candidates from meeting notes
@@ -29,7 +29,7 @@ export async function extractCandidatesNode(
   const structuredModel = model.withStructuredOutput(CandidateExtractionSchema);
 
   // Create and execute chain
-  const chain = step2Prompt.pipe(structuredModel);
+  const chain = candidateExtractionPrompt.pipe(structuredModel);
   const result = await chain.invoke({
     meetingNotes: state.meetingNotes,
     eventType: state.eventType,
