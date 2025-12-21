@@ -6,8 +6,8 @@
  */
 
 import { Annotation } from "@langchain/langgraph";
-import type { PBICandidate, ScoredCandidate, PBIRiskAnalysis, PBIEnrichment } from "../schemas/index.js";
-import type { HITLStatus, ApprovalDecision } from "../constants/index.js";
+import type { PBICandidate, ScoredCandidate, PBIRiskAnalysis, PBIEnrichment } from "../../schemas/index.js";
+import type { HITLStatus, ApprovalDecision } from "../../constants/index.js";
 
 /**
  * Metadata for pipeline execution tracking

@@ -7,9 +7,9 @@
 
 import type { BaseChatModel } from "@langchain/core/language_models/chat_models";
 import type { PipelineStateType } from "../../state/index.js";
-import { PBIRiskAnalysisSchema, type PBIRiskAnalysis } from "../../schemas/index.js";
-import { riskAnalysisPrompt } from "../../prompts/index.js";
-import { LLMRouter } from "../../../llm/index.js";
+import { PBIRiskAnalysisSchema, type PBIRiskAnalysis } from "../../../schemas/index.js";
+import { riskAnalysisPrompt } from "../../../prompts/index.js";
+import { LLMRouter } from "@chef/core";
 
 /**
  * Analyze risks for approved PBIs

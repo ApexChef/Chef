@@ -8,9 +8,9 @@
 import type { StringOutputParser } from "@langchain/core/output_parsers";
 import type { BaseChatModel } from "@langchain/core/language_models/chat_models";
 import type { PipelineStateType } from "../../state/index.js";
-import type { PBICandidate } from "../../schemas/index.js";
-import { consolidatePrompt } from "../../prompts/index.js";
-import { LLMRouter } from "../../../llm/index.js";
+import type { PBICandidate } from "../../../schemas/index.js";
+import { consolidatePrompt } from "../../../prompts/index.js";
+import { LLMRouter } from "@chef/core";
 
 /**
  * Consolidate descriptions for approved PBIs

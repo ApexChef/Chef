@@ -6,7 +6,7 @@
 
 import type { PipelineStateType } from "../../state/index.js";
 import { extractCandidates } from "../../steps/index.js";
-import { LLMRouter } from "../../../llm/index.js";
+import { LLMRouter } from "@chef/core";
 
 /**
  * Extract PBI candidates from meeting notes

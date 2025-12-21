@@ -6,7 +6,7 @@
 
 import type { PipelineStateType } from "../../state/index.js";
 import { detectEvent } from "../../steps/index.js";
-import { LLMRouter } from "../../../llm/index.js";
+import { LLMRouter } from "@chef/core";
 
 /**
  * Detect the type of meeting from notes

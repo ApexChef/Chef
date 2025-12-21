@@ -17,10 +17,10 @@ import type {
   TechnicalDoc,
   LessonLearned,
   RAGResult,
-} from "../../schemas/index.js";
-import { enrichSummaryPrompt, formatRAGResults } from "../../prompts/index.js";
-import { LLMRouter } from "../../../llm/index.js";
-import { getRAGRetriever } from "../../../rag/index.js";
+} from "../../../schemas/index.js";
+import { enrichSummaryPrompt, formatRAGResults } from "../../../prompts/index.js";
+import { LLMRouter } from "@chef/core";
+import { getRAGRetriever } from "@chef/core";
 
 /**
  * Convert RAG results to SimilarWork items

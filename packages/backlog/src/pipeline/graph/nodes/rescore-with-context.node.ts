@@ -8,8 +8,8 @@
 
 import type { PipelineStateType } from "../../state/index.js";
 import { scoreConfidence } from "../../steps/index.js";
-import { LLMRouter } from "../../../llm/index.js";
-import type { PBICandidate, ScoredCandidate } from "../../schemas/index.js";
+import { LLMRouter } from "@chef/core";
+import type { PBICandidate, ScoredCandidate } from "../../../schemas/index.js";
 
 /**
  * Re-score PBIs with human-provided context

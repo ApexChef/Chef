@@ -6,7 +6,7 @@
 
 import type { PipelineStateType } from "../../state/index.js";
 import { scoreConfidence } from "../../steps/index.js";
-import { LLMRouter } from "../../../llm/index.js";
+import { LLMRouter } from "@chef/core";
 
 /**
  * Score PBI candidates for confidence
