@@ -13,8 +13,15 @@
     "dirname": "chef",
     "commands": {
       "strategy": "pattern",
-      "target": "./dist/commands"
+      "target": "./dist/commands",
+      "globPatterns": [
+        "**/*.js",
+        "!**/index.js"
+      ]
     },
+    "plugins": [
+      "@oclif/plugin-help"
+    ],
     "topicSeparator": " ",
     "topics": {
       "backlog": {
