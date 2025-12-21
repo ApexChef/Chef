@@ -1,5 +1,5 @@
 /**
- * Prompt template for Step 3: Confidence Scoring
+ * Prompt template for ConfidenceScoring phase
  */
 
 import { ChatPromptTemplate } from "@langchain/core/prompts";
@@ -7,7 +7,7 @@ import { ChatPromptTemplate } from "@langchain/core/prompts";
 /**
  * System prompt explaining how to score PBIs
  */
-export const STEP3_SYSTEM_PROMPT = `You are an expert Scrum coach evaluating Product Backlog Item (PBI) quality.
+export const CONFIDENCE_SCORING_SYSTEM_PROMPT = `You are an expert Scrum coach evaluating Product Backlog Item (PBI) quality.
 
 Your task is to assess a PBI candidate across multiple quality dimensions.
 
@@ -52,7 +52,7 @@ Be constructive but honest. Identify specific issues and provide actionable reco
 /**
  * User prompt template for scoring a candidate
  */
-const STEP3_USER_PROMPT = `Score this PBI candidate:
+const CONFIDENCE_SCORING_USER_PROMPT = `Score this PBI candidate:
 
 **ID:** {candidateId}
 **Title:** {title}
@@ -62,12 +62,14 @@ const STEP3_USER_PROMPT = `Score this PBI candidate:
 
 Meeting type context: {eventType}
 
+{siblingContext}
+
 Provide your scoring assessment.`;
 
 /**
- * Complete prompt template for Step 3
+ * Complete prompt template for ConfidenceScoring phase
  */
-export const step3Prompt = ChatPromptTemplate.fromMessages([
-  ["system", STEP3_SYSTEM_PROMPT],
-  ["human", STEP3_USER_PROMPT],
+export const confidenceScoringPrompt = ChatPromptTemplate.fromMessages([
+  ["system", CONFIDENCE_SCORING_SYSTEM_PROMPT],
+  ["human", CONFIDENCE_SCORING_USER_PROMPT],
 ]);

@@ -12,7 +12,7 @@ export type { LLMConfig, LLMProvider } from "./llm/types.js";
 export { DEFAULT_CONFIG, DEFAULT_MODELS } from "./llm/types.js";
 
 // RAG Framework
-export { ChefRetriever } from "./rag/retriever.js";
+export { RAGRetriever, getRAGRetriever, type RAGRetrieverConfig, type RAGResult } from "./rag/index.js";
 
 // Logging
 export { createLogger } from "./logging/index.js";

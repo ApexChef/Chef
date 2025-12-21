@@ -7,9 +7,9 @@
  */
 
 import type { PipelineStateType } from "../../state/index.js";
-import { scoreConfidence } from "../../steps/index.js";
-import { LLMRouter } from "../../../llm/index.js";
-import type { PBICandidate, ScoredCandidate } from "../../schemas/index.js";
+import { scoreMultipleCandidates } from "./score-confidence.node.js";
+import { LLMRouter } from "@chef/core";
+import type { PBICandidate, ScoredCandidate } from "../../../schemas/index.js";
 
 /**
  * Re-score PBIs with human-provided context
@@ -69,11 +69,12 @@ export async function rescoreWithContextNode(
     );
   }
 
-  // Re-score the enriched candidates
-  const result = await scoreConfidence(
+  // Re-score the enriched candidates (including sibling context from dependencies)
+  const result = await scoreMultipleCandidates(
     enrichedCandidates,
     state.eventType,
-    router
+    router,
+    state.dependencies || []
   );
 
   // Merge new scores with existing scores (keep non-rescored ones)

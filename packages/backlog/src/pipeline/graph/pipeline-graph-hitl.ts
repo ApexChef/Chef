@@ -13,6 +13,7 @@ import { PipelineState } from "../state/index.js";
 import {
   detectEventNode,
   extractCandidatesNode,
+  dependencyMappingNode,
   scoreConfidenceNode,
   routeByScoreNode,
   routeDecision,
@@ -41,12 +42,12 @@ export interface HITLGraphOptions {
  *
  * Flow:
  * ```
- * START → detectEvent → extractCandidates → scoreConfidence → routeByScore
- *                                                                    │
- *                    ┌───────────────────────────────────────────────┤
- *                    │                                               │
- *                    ▼                                               ▼
- *               (enrich) ←──── humanApproval ←──── (interrupt) ←── (approve)
+ * START → detectEvent → extractCandidates → dependencyMapping → scoreConfidence → routeByScore
+ *                                                                                      │
+ *                    ┌─────────────────────────────────────────────────────────────────┤
+ *                    │                                                                 │
+ *                    ▼                                                                 ▼
+ *               (enrich) ←──── humanApproval ←──── (interrupt) ←────────────────── (approve)
  *                    │              │
  *                    │              ▼
  *                    │        requestContext
@@ -98,9 +99,10 @@ export function createPipelineGraphWithHITL(options: HITLGraphOptions = {}) {
 
   // Build the graph with conditional routing
   const builder = new StateGraph(PipelineState)
-    // Core pipeline nodes (Steps 1-3)
+    // Core pipeline nodes (EventDetection → CandidateExtraction → DependencyMapping → ConfidenceScoring)
     .addNode("detectEvent", detectEventNode)
     .addNode("extractCandidates", extractCandidatesNode)
+    .addNode("dependencyMapping", dependencyMappingNode)
     .addNode("scoreConfidence", scoreConfidenceNode)
 
     // HITL routing nodes
@@ -115,22 +117,23 @@ export function createPipelineGraphWithHITL(options: HITLGraphOptions = {}) {
     })
     .addNode("rescoreWithContext", rescoreWithContextNode)
 
-    // Step 4: Enrichment (placeholder)
+    // ContextEnrichment phase
     .addNode("enrichContext", enrichContextNode)
 
-    // Step 4.5: Consolidate Description
+    // ConsolidateDescription phase
     .addNode("consolidateDescription", consolidateDescriptionNode)
 
-    // Step 5: Risk Analysis
+    // RiskAnalysis phase
     .addNode("riskAnalysis", riskAnalysisNode)
 
-    // Step 6: Export PBIs
+    // Export phase
     .addNode("exportPBI", exportPBINode)
 
     // Linear edges for core pipeline
     .addEdge(START, "detectEvent")
     .addEdge("detectEvent", "extractCandidates")
-    .addEdge("extractCandidates", "scoreConfidence")
+    .addEdge("extractCandidates", "dependencyMapping")
+    .addEdge("dependencyMapping", "scoreConfidence")
     .addEdge("scoreConfidence", "routeByScore")
 
     // Conditional routing from routeByScore

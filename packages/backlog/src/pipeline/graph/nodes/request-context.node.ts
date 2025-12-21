@@ -7,7 +7,7 @@
 
 import { interrupt, Command } from "@langchain/langgraph";
 import type { PipelineStateType, PBIHITLStatus } from "../../state/index.js";
-import type { PBICandidate } from "../../schemas/index.js";
+import type { PBICandidate } from "../../../schemas/index.js";
 
 /**
  * Interrupt payload for context requests

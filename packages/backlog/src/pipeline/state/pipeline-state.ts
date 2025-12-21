@@ -6,8 +6,8 @@
  */
 
 import { Annotation } from "@langchain/langgraph";
-import type { PBICandidate, ScoredCandidate, PBIRiskAnalysis, PBIEnrichment } from "../schemas/index.js";
-import type { HITLStatus, ApprovalDecision } from "../constants/index.js";
+import type { PBICandidate, ScoredCandidate, PBIRiskAnalysis, PBIEnrichment, Dependency } from "../../schemas/index.js";
+import type { HITLStatus, ApprovalDecision } from "../../constants/index.js";
 
 /**
  * Metadata for pipeline execution tracking
@@ -46,7 +46,7 @@ export const PipelineState = Annotation.Root({
   // === Input (set once at invocation) ===
   meetingNotes: Annotation<string>,
 
-  // === Step 1: Event Detection ===
+  // === EventDetection phase ===
   eventType: Annotation<string>,
   eventConfidence: Annotation<number>,
   eventIndicators: Annotation<string[]>({
@@ -54,7 +54,7 @@ export const PipelineState = Annotation.Root({
     default: () => [],
   }),
 
-  // === Step 2: Candidate Extraction ===
+  // === CandidateExtraction phase ===
   /**
    * PBI candidates - merged by ID to preserve human context additions
    */
@@ -83,7 +83,21 @@ export const PipelineState = Annotation.Root({
   }),
   extractionNotes: Annotation<string>,
 
-  // === Step 3: Confidence Scoring ===
+  // === DependencyMapping phase ===
+  /**
+   * Dependencies between sibling PBIs
+   * Set by the DependencyMapping node after candidate extraction
+   */
+  dependencies: Annotation<Dependency[]>({
+    reducer: (prev, update) => {
+      if (!update) return prev ?? [];
+      // Replace all dependencies on update
+      return update;
+    },
+    default: () => [],
+  }),
+
+  // === ConfidenceScoring phase ===
   scoredCandidates: Annotation<ScoredCandidate[]>({
     reducer: (_, newVal) => newVal ?? [],
     default: () => [],
@@ -130,7 +144,7 @@ export const PipelineState = Annotation.Root({
   }),
 
   /**
-   * IDs of PBIs approved for enrichment (Step 4)
+   * IDs of PBIs approved for enrichment (ContextEnrichment phase)
    * Accumulated as PBIs are approved
    */
   approvedForEnrichment: Annotation<string[]>({
@@ -153,7 +167,7 @@ export const PipelineState = Annotation.Root({
     default: () => null,
   }),
 
-  // === Step 4: RAG Context Enrichment ===
+  // === ContextEnrichment phase ===
   /**
    * RAG enrichment data for approved PBIs
    * Merged by candidateId
@@ -170,7 +184,7 @@ export const PipelineState = Annotation.Root({
     default: () => [],
   }),
 
-  // === Step 5: Risk Analysis ===
+  // === RiskAnalysis phase ===
   /**
    * Risk analysis results for approved PBIs
    * Merged by candidateId
@@ -187,7 +201,7 @@ export const PipelineState = Annotation.Root({
     default: () => [],
   }),
 
-  // === Step 6: Export ===
+  // === Export phase ===
   /**
    * IDs of PBIs that have been exported as final markdown
    */

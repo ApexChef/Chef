@@ -1,5 +1,5 @@
 /**
- * Risk Analysis Node (Step 5)
+ * RiskAnalysis Node
  *
  * Analyzes risks for approved PBIs using their consolidated descriptions.
  * Considers both LLM-extracted content and human-provided context.
@@ -7,9 +7,9 @@
 
 import type { BaseChatModel } from "@langchain/core/language_models/chat_models";
 import type { PipelineStateType } from "../../state/index.js";
-import { PBIRiskAnalysisSchema, type PBIRiskAnalysis } from "../../schemas/index.js";
-import { riskAnalysisPrompt } from "../../prompts/index.js";
-import { LLMRouter } from "../../../llm/index.js";
+import { PBIRiskAnalysisSchema, type PBIRiskAnalysis } from "../../../schemas/index.js";
+import { riskAnalysisPrompt } from "../../../prompts/index.js";
+import { LLMRouter } from "@chef/core";
 
 /**
  * Analyze risks for approved PBIs
@@ -58,11 +58,11 @@ export async function riskAnalysisNode(
     const scored = state.scoredCandidates.find((s) => s.candidateId === candidateId);
 
     if (!candidate) {
-      console.warn(`[Step 5] Candidate ${candidateId} not found, skipping`);
+      console.warn(`[RiskAnalysis] Candidate ${candidateId} not found, skipping`);
       continue;
     }
 
-    console.log(`[Step 5] Analyzing risks for ${candidateId}...`);
+    console.log(`[RiskAnalysis] Analyzing risks for ${candidateId}...`);
 
     try {
       const result = await chain.invoke({
@@ -79,10 +79,10 @@ export async function riskAnalysisNode(
       newAnalyses.push(result as PBIRiskAnalysis);
 
       console.log(
-        `[Step 5]   ${candidateId}: ${result.overallRiskLevel} risk, ${result.risks.length} risk(s) identified`
+        `[RiskAnalysis]   ${candidateId}: ${result.overallRiskLevel} risk, ${result.risks.length} risk(s) identified`
       );
     } catch (error) {
-      console.error(`[Step 5]   ${candidateId}: Risk analysis failed`, error);
+      console.error(`[RiskAnalysis]   ${candidateId}: Risk analysis failed`, error);
       // Create a minimal fallback analysis
       newAnalyses.push({
         candidateId,

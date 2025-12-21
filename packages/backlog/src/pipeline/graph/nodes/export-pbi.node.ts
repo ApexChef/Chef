@@ -7,8 +7,8 @@
 import * as fs from "fs";
 import * as path from "path";
 import type { PipelineStateType } from "../../state/index.js";
-import type { PBIRiskAnalysis, ScoredCandidate, PBIEnrichment } from "../../schemas/index.js";
-import { getScoreLabel } from "../../constants/index.js";
+import type { PBIRiskAnalysis, ScoredCandidate, PBIEnrichment } from "../../../schemas/index.js";
+import { getScoreLabel } from "../../../constants/index.js";
 
 const OUTPUT_DIR = "./docs/output";
 

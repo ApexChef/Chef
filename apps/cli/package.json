@@ -12,9 +12,16 @@
     "bin": "chef",
     "dirname": "chef",
     "commands": {
-      "strategy": "explicit",
-      "target": "./dist/commands/index.js"
+      "strategy": "pattern",
+      "target": "./dist/commands",
+      "globPatterns": [
+        "**/*.js",
+        "!**/index.js"
+      ]
     },
+    "plugins": [
+      "@oclif/plugin-help"
+    ],
     "topicSeparator": " ",
     "topics": {
       "backlog": {
@@ -33,7 +40,8 @@
     "@chef/core": "workspace:*",
     "@chef/backlog": "workspace:*",
     "@oclif/core": "^4.2.1",
-    "@oclif/plugin-help": "^6.2.20"
+    "@oclif/plugin-help": "^6.2.20",
+    "dotenv": "^16.4.7"
   },
   "devDependencies": {
     "@types/node": "^22.10.2",
