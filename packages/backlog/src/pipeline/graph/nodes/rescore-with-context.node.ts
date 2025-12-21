@@ -7,7 +7,7 @@
  */
 
 import type { PipelineStateType } from "../../state/index.js";
-import { scoreConfidence } from "../../steps/index.js";
+import { scoreMultipleCandidates } from "./score-confidence.node.js";
 import { LLMRouter } from "@chef/core";
 import type { PBICandidate, ScoredCandidate } from "../../../schemas/index.js";
 
@@ -70,7 +70,7 @@ export async function rescoreWithContextNode(
   }
 
   // Re-score the enriched candidates
-  const result = await scoreConfidence(
+  const result = await scoreMultipleCandidates(
     enrichedCandidates,
     state.eventType,
     router

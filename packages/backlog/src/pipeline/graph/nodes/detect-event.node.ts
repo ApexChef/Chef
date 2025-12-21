@@ -1,12 +1,15 @@
 /**
- * Detect Event Node
+ * Detect Event Node (Step 1)
  *
- * Graph node wrapper for Step 1: Event Detection
+ * Classifies meeting notes into one of the meeting types:
+ * refinement, planning, standup, retrospective, or other
  */
 
-import type { PipelineStateType } from "../../state/index.js";
-import { detectEvent } from "../../steps/index.js";
+import type { BaseChatModel } from "@langchain/core/language_models/chat_models";
 import { LLMRouter } from "@chef/core";
+import type { PipelineStateType } from "../../state/index.js";
+import { EventDetectionSchema } from "../../../schemas/index.js";
+import { step1Prompt } from "../../../prompts/index.js";
 
 /**
  * Detect the type of meeting from notes
@@ -22,11 +25,16 @@ export async function detectEventNode(
 
   console.log("[Graph] Running detectEvent node...");
 
-  // Call existing step function
-  const result = await detectEvent(state.meetingNotes, router);
+  // Get model with low temperature for consistent classification
+  const model = router.getModel({ temperature: 0 }) as BaseChatModel;
+  const structuredModel = model.withStructuredOutput(EventDetectionSchema);
+
+  // Create and execute chain
+  const chain = step1Prompt.pipe(structuredModel);
+  const result = await chain.invoke({ meetingNotes: state.meetingNotes });
 
   const elapsed = Date.now() - startTime;
-  console.log(`[Graph] detectEvent complete (${elapsed}ms)`);
+  console.log(`[Graph] detectEvent complete: ${result.eventType} (${elapsed}ms)`);
 
   // Return partial state update
   return {

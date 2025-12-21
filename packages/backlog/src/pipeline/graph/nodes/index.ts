@@ -5,7 +5,7 @@
 // Core pipeline nodes
 export { detectEventNode } from "./detect-event.node.js";
 export { extractCandidatesNode } from "./extract-candidates.node.js";
-export { scoreConfidenceNode } from "./score-confidence.node.js";
+export { scoreConfidenceNode, scoreMultipleCandidates } from "./score-confidence.node.js";
 
 // HITL routing nodes
 export { routeByScoreNode, routeDecision } from "./route-by-score.node.js";
@@ -19,7 +19,7 @@ export {
 } from "./request-context.node.js";
 export { rescoreWithContextNode } from "./rescore-with-context.node.js";
 
-// Step 4: Enrichment (legacy)
+// Step 4: Enrichment
 export { enrichContextNode } from "./enrich-context.node.js";
 
 // Step 4.5: Consolidate Description

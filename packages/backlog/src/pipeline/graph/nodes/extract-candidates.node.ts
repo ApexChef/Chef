@@ -1,12 +1,14 @@
 /**
- * Extract Candidates Node
+ * Extract Candidates Node (Step 2)
  *
- * Graph node wrapper for Step 2: Candidate Extraction
+ * Extracts PBI candidates from meeting notes
  */
 
-import type { PipelineStateType } from "../../state/index.js";
-import { extractCandidates } from "../../steps/index.js";
+import type { BaseChatModel } from "@langchain/core/language_models/chat_models";
 import { LLMRouter } from "@chef/core";
+import type { PipelineStateType } from "../../state/index.js";
+import { CandidateExtractionSchema } from "../../../schemas/index.js";
+import { step2Prompt } from "../../../prompts/index.js";
 
 /**
  * Extract PBI candidates from meeting notes
@@ -22,12 +24,16 @@ export async function extractCandidatesNode(
 
   console.log("[Graph] Running extractCandidates node...");
 
-  // Read from shared state - no parameter passing!
-  const result = await extractCandidates(
-    state.meetingNotes,
-    state.eventType,
-    router
-  );
+  // Get model with low temperature for consistent extraction
+  const model = router.getModel({ temperature: 0 }) as BaseChatModel;
+  const structuredModel = model.withStructuredOutput(CandidateExtractionSchema);
+
+  // Create and execute chain
+  const chain = step2Prompt.pipe(structuredModel);
+  const result = await chain.invoke({
+    meetingNotes: state.meetingNotes,
+    eventType: state.eventType,
+  });
 
   const elapsed = Date.now() - startTime;
   console.log(`[Graph] extractCandidates complete: ${result.totalFound} candidates (${elapsed}ms)`);
