@@ -2,6 +2,12 @@
 
 AI-powered productivity tools for agile teams.
 
+## Background
+
+Chef is the modular successor to [backlog-chef](https://github.com/ApexChef/backlog-chef). The original project was refactored to use the LangChain/LangGraph framework, with the architecture redesigned to separate core AI capabilities from specific tools.
+
+The result is a layered system where `@chef/core` provides reusable foundations (LLM routing, RAG, pipeline primitives) and domain-specific tools like `@chef/backlog` are built on top as independent packages. This allows new AI-powered agile tools to be added without duplicating infrastructure.
+
 ## Packages
 
 | Package | Description |
