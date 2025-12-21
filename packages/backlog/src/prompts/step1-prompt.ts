@@ -1,4 +1,4 @@
-What is the status of the PBIs that are planned to do or active? /**
+/**
  * Prompt template for Step 1: Event Detection
  */
 

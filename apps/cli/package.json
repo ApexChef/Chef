@@ -12,8 +12,8 @@
     "bin": "chef",
     "dirname": "chef",
     "commands": {
-      "strategy": "explicit",
-      "target": "./dist/commands/index.js"
+      "strategy": "pattern",
+      "target": "./dist/commands"
     },
     "topicSeparator": " ",
     "topics": {
