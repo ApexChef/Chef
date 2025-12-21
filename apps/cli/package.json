@@ -1,0 +1,43 @@
+{
+  "name": "@chef/cli",
+  "version": "0.1.0",
+  "description": "Chef CLI - AI-powered productivity tools for agile teams",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "bin": {
+    "chef": "./bin/run.js"
+  },
+  "oclif": {
+    "bin": "chef",
+    "dirname": "chef",
+    "commands": {
+      "strategy": "explicit",
+      "target": "./dist/commands/index.js"
+    },
+    "topicSeparator": " ",
+    "topics": {
+      "backlog": {
+        "description": "Backlog Chef - Meeting-to-PBI pipeline"
+      }
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "clean": "rm -rf dist",
+    "lint": "eslint src --ext .ts",
+    "chef": "node --loader ts-node/esm ./bin/dev.js"
+  },
+  "dependencies": {
+    "@chef/core": "workspace:*",
+    "@chef/backlog": "workspace:*",
+    "@oclif/core": "^4.2.1",
+    "@oclif/plugin-help": "^6.2.20"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.7.2"
+  }
+}
