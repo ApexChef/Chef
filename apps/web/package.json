@@ -1,0 +1,16 @@
+{
+  "name": "@chef/web",
+  "version": "0.1.0",
+  "description": "Chef Web UI - View backlog pipeline results",
+  "type": "module",
+  "main": "./src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js"
+  },
+  "dependencies": {
+    "@chef/backlog": "workspace:*",
+    "better-sqlite3": "^11.7.0",
+    "express": "^4.21.2"
+  }
+}

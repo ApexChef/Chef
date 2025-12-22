@@ -44,7 +44,11 @@ async function scoreSingleCandidate(
     siblingContext,
   });
 
-  return result as ScoredCandidate;
+  // Ensure candidateId is always set correctly (don't rely on LLM echo)
+  return {
+    ...result,
+    candidateId: candidate.id,
+  } as ScoredCandidate;
 }
 
 /**
