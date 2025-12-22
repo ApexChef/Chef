@@ -118,16 +118,12 @@ export function createLogger(config?: LoggerConfig): Logger {
     return pino({ level: 'silent', enabled: false });
   }
 
+  // Build transport configuration
+  const transport = buildTransportConfig(resolvedConfig);
+
   const options: LoggerOptions = {
     level: resolvedConfig.level,
-    timestamp: pino.stdTimeFunctions.isoTime,
-    formatters: {
-      level: (label) => ({ level: label.toUpperCase() }),
-      bindings: (bindings) => ({
-        pid: bindings.pid,
-        hostname: bindings.hostname
-      })
-    }
+    timestamp: pino.stdTimeFunctions.isoTime
   };
 
   // Add logger name if specified
@@ -135,8 +131,17 @@ export function createLogger(config?: LoggerConfig): Logger {
     options.name = resolvedConfig.name;
   }
 
-  // Build transport configuration
-  const transport = buildTransportConfig(resolvedConfig);
+  // Only add formatters when NOT using transports (they're incompatible)
+  if (!transport) {
+    options.formatters = {
+      level: (label) => ({ level: label.toUpperCase() }),
+      bindings: (bindings) => ({
+        pid: bindings.pid,
+        hostname: bindings.hostname
+      })
+    };
+  }
+
   if (transport) {
     options.transport = transport;
   }
