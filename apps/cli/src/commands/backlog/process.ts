@@ -5,7 +5,7 @@ import {
   createPipelineGraphWithHITL,
   type PipelineStateType,
 } from "@chef/backlog";
-import { LLMRouter } from "@chef/core";
+import { LLMRouter, getLogger, runPipeline } from "@chef/core";
 
 export default class BacklogProcess extends Command {
   static override args = {
@@ -53,6 +53,9 @@ export default class BacklogProcess extends Command {
   public async run(): Promise<void> {
     const { args, flags } = await this.parse(BacklogProcess);
 
+    // Initialize logger
+    const logger = getLogger();
+
     // Validate input file exists
     if (!existsSync(args.input)) {
       this.error(`Input file not found: ${args.input}`);
@@ -61,6 +64,12 @@ export default class BacklogProcess extends Command {
     // Read meeting notes
     const meetingNotes = readFileSync(args.input, "utf-8");
     this.log(`Processing: ${args.input} (${meetingNotes.length} chars)`);
+
+    logger.info({
+      inputFile: args.input,
+      sizeChars: meetingNotes.length,
+      command: 'backlog:process'
+    }, 'Starting backlog processing');
 
     // Configure LLM via environment variables (only if explicitly provided)
     if (flags.provider) {
@@ -92,29 +101,41 @@ export default class BacklogProcess extends Command {
       mkdirSync(checkpointDir, { recursive: true });
     }
 
+    // Generate a unique thread ID for this session
+    const threadId = `cli-${Date.now()}`;
+
+    logger.info({ threadId }, 'Generated thread ID for pipeline run');
+
     try {
       // Create the pipeline graph
       const graph = createPipelineGraphWithHITL({
         checkpointPath,
       });
 
-      // Generate a unique thread ID for this session
-      const threadId = `cli-${Date.now()}`;
-
       this.log("Starting pipeline...");
       this.log("─".repeat(50));
 
-      // Invoke the graph
-      const result = await graph.invoke(
-        { meetingNotes },
-        { configurable: { thread_id: threadId } }
-      );
+      // Wrap pipeline execution in logging context
+      const result = await runPipeline(threadId, async () => {
+        logger.info({ checkpointPath }, 'Invoking pipeline graph');
+
+        // Invoke the graph
+        return await graph.invoke(
+          { meetingNotes },
+          { configurable: { thread_id: threadId } }
+        );
+      });
 
       this.log("─".repeat(50));
       this.log("");
 
       // Check for HITL interrupt
       if (result.pendingInterrupt) {
+        logger.warn({
+          threadId,
+          interruptType: result.pendingInterrupt
+        }, 'Pipeline paused for human input');
+
         this.log("Pipeline paused - human input required:");
         this.log(JSON.stringify(result.pendingInterrupt, null, 2));
         this.log(`\nThread ID: ${threadId}`);
@@ -122,9 +143,21 @@ export default class BacklogProcess extends Command {
         return;
       }
 
+      logger.info({
+        threadId,
+        candidatesCount: result.candidates?.length || 0,
+        exportedPBIsCount: result.exportedPBIs?.length || 0
+      }, 'Pipeline completed successfully');
+
       // Output results based on format
       this.outputResults(result, flags.output);
     } catch (error) {
+      logger.error({
+        threadId,
+        err: error,
+        inputFile: args.input
+      }, 'Pipeline execution failed');
+
       if (error instanceof Error) {
         this.error(`Pipeline failed: ${error.message}`);
       }

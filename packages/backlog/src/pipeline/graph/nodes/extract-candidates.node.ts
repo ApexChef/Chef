@@ -5,7 +5,7 @@
  */
 
 import type { BaseChatModel } from "@langchain/core/language_models/chat_models";
-import { LLMRouter } from "@chef/core";
+import { LLMRouter, getContextLogger, runStep } from "@chef/core";
 import type { PipelineStateType } from "../../state/index.js";
 import { CandidateExtractionSchema } from "../../../schemas/index.js";
 import { candidateExtractionPrompt } from "../../../prompts/index.js";
@@ -19,34 +19,44 @@ import { candidateExtractionPrompt } from "../../../prompts/index.js";
 export async function extractCandidatesNode(
   state: PipelineStateType
 ): Promise<Partial<PipelineStateType>> {
-  const startTime = Date.now();
-  const router = new LLMRouter();
+  return runStep('extractCandidates', async () => {
+    const logger = getContextLogger();
+    const startTime = Date.now();
+    const router = new LLMRouter();
 
-  console.log("[Graph] Running extractCandidates node...");
+    logger.info({
+      eventType: state.eventType,
+      notesLength: state.meetingNotes.length
+    }, 'Starting candidate extraction');
 
-  // Get model with low temperature for consistent extraction
-  const model = router.getModel({ temperature: 0 }) as BaseChatModel;
-  const structuredModel = model.withStructuredOutput(CandidateExtractionSchema);
+    // Get model with low temperature for consistent extraction
+    const model = router.getModel({ temperature: 0 }) as BaseChatModel;
+    const structuredModel = model.withStructuredOutput(CandidateExtractionSchema);
 
-  // Create and execute chain
-  const chain = candidateExtractionPrompt.pipe(structuredModel);
-  const result = await chain.invoke({
-    meetingNotes: state.meetingNotes,
-    eventType: state.eventType,
-  });
+    // Create and execute chain
+    const chain = candidateExtractionPrompt.pipe(structuredModel);
+    const result = await chain.invoke({
+      meetingNotes: state.meetingNotes,
+      eventType: state.eventType,
+    });
 
-  const elapsed = Date.now() - startTime;
-  console.log(`[Graph] extractCandidates complete: ${result.totalFound} candidates (${elapsed}ms)`);
+    const elapsed = Date.now() - startTime;
 
-  return {
-    candidates: result.candidates,
-    extractionNotes: result.extractionNotes || "",
-    metadata: {
-      ...state.metadata,
-      stepTimings: {
-        ...state.metadata.stepTimings,
-        extractCandidates: elapsed,
+    logger.info({
+      candidatesFound: result.totalFound,
+      duration: elapsed
+    }, 'Candidate extraction completed');
+
+    return {
+      candidates: result.candidates,
+      extractionNotes: result.extractionNotes || "",
+      metadata: {
+        ...state.metadata,
+        stepTimings: {
+          ...state.metadata.stepTimings,
+          extractCandidates: elapsed,
+        },
       },
-    },
-  };
+    };
+  });
 }
