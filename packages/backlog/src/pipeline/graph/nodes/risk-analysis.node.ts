@@ -76,7 +76,11 @@ export async function riskAnalysisNode(
         recommendations: scored?.recommendations?.join("\n- ") || "None",
       });
 
-      newAnalyses.push(result as PBIRiskAnalysis);
+      // Ensure candidateId is always set correctly (don't rely on LLM echo)
+      newAnalyses.push({
+        ...result,
+        candidateId,
+      } as PBIRiskAnalysis);
 
       console.log(
         `[RiskAnalysis]   ${candidateId}: ${result.overallRiskLevel} risk, ${result.risks.length} risk(s) identified`

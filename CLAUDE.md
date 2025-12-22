@@ -2,6 +2,13 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+
+## Reference
+
+This is the final version of Backlog-Chef. This is based on two previous projects which are the following:
+- [langchain-playground](/Users/alwin/Projects/github.com/ApexChef/langchain-playground)
+- [backlog-chef](/Users/alwin/Projects/github.com/ApexChef/backlog-chef)
+
 ## Build & Development Commands
 
 ```bash
