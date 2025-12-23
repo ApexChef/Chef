@@ -6,7 +6,7 @@
  */
 
 import { Annotation } from "@langchain/langgraph";
-import type { PBICandidate, ScoredCandidate, PBIRiskAnalysis, PBIEnrichment, Dependency } from "../../schemas/index.js";
+import type { PBICandidate, ScoredCandidate, PBIRiskAnalysis, PBIEnrichment, Dependency, PBIContextHistory } from "../../schemas/index.js";
 import type { HITLStatus, ApprovalDecision } from "../../constants/index.js";
 
 /**
@@ -165,6 +165,38 @@ export const PipelineState = Annotation.Root({
   } | null>({
     reducer: (_, update) => update ?? null,
     default: () => null,
+  }),
+
+  /**
+   * Context history for each PBI - tracks all iterations of Q&A
+   * Preserves structured data across multiple rounds of context gathering
+   * Merged by candidateId, with iterations appended
+   */
+  contextHistory: Annotation<PBIContextHistory[]>({
+    reducer: (prev, update) => {
+      if (!update) return prev ?? [];
+      const map = new Map((prev ?? []).map((h) => [h.candidateId, h]));
+      for (const u of update) {
+        const existing = map.get(u.candidateId);
+        if (existing) {
+          // Merge iterations - append new ones, update existing by iteration number
+          const iterMap = new Map(existing.iterations.map((i) => [i.iteration, i]));
+          for (const iter of u.iterations) {
+            iterMap.set(iter.iteration, iter);
+          }
+          map.set(u.candidateId, {
+            ...existing,
+            ...u,
+            iterations: Array.from(iterMap.values()).sort((a, b) => a.iteration - b.iteration),
+            totalIterations: Math.max(existing.totalIterations, u.totalIterations),
+          });
+        } else {
+          map.set(u.candidateId, u);
+        }
+      }
+      return Array.from(map.values());
+    },
+    default: () => [],
   }),
 
   // === ContextEnrichment phase ===

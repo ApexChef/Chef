@@ -8,7 +8,6 @@
 export { PipelineState, type PipelineStateType, type PipelineMetadata, type PBIHITLStatus } from "./state/pipeline-state.js";
 
 // Graph
-export { createPipelineGraph } from "./graph/pipeline-graph.js";
 export { createPipelineGraphWithHITL, type HITLGraphOptions, type HITLPipelineGraph } from "./graph/pipeline-graph-hitl.js";
 
 // Nodes

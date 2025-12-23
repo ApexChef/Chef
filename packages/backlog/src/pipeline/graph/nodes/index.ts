@@ -22,6 +22,7 @@ export {
 } from "./human-approval.node.js";
 export {
   requestContextNode,
+  generateContextQuestions,
   type ContextInterruptPayload,
 } from "./request-context.node.js";
 export { rescoreWithContextNode } from "./rescore-with-context.node.js";

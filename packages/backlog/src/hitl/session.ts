@@ -9,6 +9,7 @@
 import { Command } from "@langchain/langgraph";
 import {
   createPipelineGraphWithHITL,
+  generateContextQuestions as generateStructuredQuestions,
   type HITLPipelineGraph,
   type PipelineStateType,
   type ApprovalInterruptPayload,
@@ -19,6 +20,11 @@ import {
   type ApprovalResponse,
   type ContextResponse,
 } from "../constants/thresholds.js";
+import type {
+  ContextQuestion,
+  PBIContextResponse,
+} from "../schemas/index.js";
+import { formatAnswersAsContext } from "../schemas/index.js";
 
 /**
  * Pending approval information for display
@@ -42,7 +48,10 @@ export interface PendingContextInfo {
   score: number;
   currentDescription: string;
   missingElements: string[];
+  /** @deprecated Use structuredQuestions instead */
   specificQuestions: string[];
+  /** Structured questions with options for interactive prompts */
+  structuredQuestions: ContextQuestion[];
 }
 
 /**
@@ -246,6 +255,7 @@ export class HITLSession {
 
       const missingElements = scored?.missingElements ?? [];
       const recommendations = scored?.recommendations ?? [];
+      const structuredQuestions = generateStructuredQuestions(id, missingElements, recommendations);
 
       return {
         candidateId: id,
@@ -253,7 +263,8 @@ export class HITLSession {
         score: pbiStatus?.score ?? scored?.overallScore ?? 0,
         currentDescription: candidate?.extractedDescription ?? "",
         missingElements,
-        specificQuestions: this.generateContextQuestions(missingElements, recommendations),
+        specificQuestions: structuredQuestions.map((q) => q.question),
+        structuredQuestions,
       };
     });
   }
@@ -290,7 +301,7 @@ export class HITLSession {
   }
 
   /**
-   * Submit context responses and resume pipeline
+   * Submit context responses and resume pipeline (legacy string format)
    */
   async submitContext(contexts: Record<string, string>): Promise<PipelineStateType> {
     if (!this.isAwaitingContext()) {
@@ -309,6 +320,25 @@ export class HITLSession {
 
     this.updateStatusFromState();
     return this.state;
+  }
+
+  /**
+   * Submit structured context responses and resume pipeline
+   */
+  async submitStructuredContext(
+    responses: PBIContextResponse[]
+  ): Promise<PipelineStateType> {
+    if (!this.isAwaitingContext()) {
+      throw new Error("No context request pending");
+    }
+
+    // Convert structured responses to legacy format for backward compatibility
+    const contexts: Record<string, string> = {};
+    for (const response of responses) {
+      contexts[response.candidateId] = formatAnswersAsContext(response);
+    }
+
+    return this.submitContext(contexts);
   }
 
   /**
@@ -443,37 +473,102 @@ export class HITLSession {
   }
 
   /**
-   * Generate specific questions for missing context
+   * Save partial context responses (for pause/resume functionality)
    */
-  private generateContextQuestions(
-    missingElements: string[],
-    recommendations: string[]
-  ): string[] {
-    const questions: string[] = [];
+  async savePartialContext(responses: PBIContextResponse[]): Promise<void> {
+    const Database = (await import("better-sqlite3")).default;
+    const db = new Database(this.checkpointPath);
 
-    // Convert missing elements to questions
-    for (const missing of missingElements.slice(0, 3)) {
-      const lowerMissing = missing.toLowerCase();
-      if (lowerMissing.includes("acceptance criteria")) {
-        questions.push("What specific conditions should be met for this to be considered done?");
-      } else if (lowerMissing.includes("description")) {
-        questions.push("Can you provide more details about what this PBI should accomplish?");
-      } else if (lowerMissing.includes("scope")) {
-        questions.push("What is in scope and out of scope for this PBI?");
-      } else {
-        questions.push(`Please provide: ${missing}`);
-      }
+    // Create table if not exists
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS partial_context (
+        thread_id TEXT NOT NULL,
+        candidate_id TEXT NOT NULL,
+        response_data TEXT NOT NULL,
+        updated_at TEXT NOT NULL,
+        PRIMARY KEY (thread_id, candidate_id)
+      )
+    `);
+
+    const stmt = db.prepare(`
+      INSERT OR REPLACE INTO partial_context (thread_id, candidate_id, response_data, updated_at)
+      VALUES (?, ?, ?, ?)
+    `);
+
+    const now = new Date().toISOString();
+
+    for (const response of responses) {
+      stmt.run(
+        this.threadId,
+        response.candidateId,
+        JSON.stringify(response),
+        now
+      );
     }
 
-    // Add questions from recommendations
-    for (const rec of recommendations.slice(0, 2)) {
-      if (!questions.some((q) => q.toLowerCase().includes(rec.toLowerCase().slice(0, 20)))) {
-        questions.push(rec.endsWith("?") ? rec : `${rec}?`);
-      }
-    }
-
-    return questions.slice(0, 5);
+    db.close();
   }
+
+  /**
+   * Load partial context responses (for resume functionality)
+   */
+  async loadPartialContext(): Promise<PBIContextResponse[]> {
+    const Database = (await import("better-sqlite3")).default;
+
+    try {
+      const db = new Database(this.checkpointPath, { readonly: true });
+
+      // Check if table exists
+      const tableExists = db.prepare(`
+        SELECT name FROM sqlite_master WHERE type='table' AND name='partial_context'
+      `).get();
+
+      if (!tableExists) {
+        db.close();
+        return [];
+      }
+
+      const rows = db.prepare(`
+        SELECT response_data
+        FROM partial_context
+        WHERE thread_id = ?
+      `).all(this.threadId) as { response_data: string }[];
+
+      db.close();
+
+      return rows.map((row) => JSON.parse(row.response_data) as PBIContextResponse);
+    } catch {
+      return [];
+    }
+  }
+
+  /**
+   * Clear partial context after successful submission
+   */
+  async clearPartialContext(): Promise<void> {
+    const Database = (await import("better-sqlite3")).default;
+
+    try {
+      const db = new Database(this.checkpointPath);
+
+      db.prepare(`
+        DELETE FROM partial_context WHERE thread_id = ?
+      `).run(this.threadId);
+
+      db.close();
+    } catch {
+      // Ignore errors - table might not exist
+    }
+  }
+
+  /**
+   * Check if there's partial context saved for this thread
+   */
+  async hasPartialContext(): Promise<boolean> {
+    const partial = await this.loadPartialContext();
+    return partial.length > 0;
+  }
+
 }
 
 /**

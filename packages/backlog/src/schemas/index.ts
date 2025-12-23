@@ -77,3 +77,37 @@ export {
   type PBIEnrichment,
   type RAGResult,
 } from "./enrichment.schema.js";
+
+// Context Questions (HITL)
+export {
+  QuestionTypeEnum,
+  QuestionOptionSchema,
+  ContextQuestionSchema,
+  PBIContextQuestionsSchema,
+  AnswerStatusEnum,
+  ContextAnswerSchema,
+  ContextSessionStatusEnum,
+  PBIContextResponseSchema,
+  StructuredContextResponseSchema,
+  formatAnswersAsContext,
+  type QuestionType,
+  type QuestionOption,
+  type ContextQuestion,
+  type PBIContextQuestions,
+  type AnswerStatus,
+  type ContextAnswer,
+  type ContextSessionStatus,
+  type PBIContextResponse,
+  type StructuredContextResponse,
+} from "./context-question.schema.js";
+
+// Context History (HITL iteration tracking)
+export {
+  ContextIterationSchema,
+  PBIContextHistorySchema,
+  getLatestIteration,
+  formatContextHistoryForLLM,
+  getContextHistorySummary,
+  type ContextIteration,
+  type PBIContextHistory,
+} from "./context-history.schema.js";

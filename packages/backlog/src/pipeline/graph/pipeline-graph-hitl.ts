@@ -7,7 +7,6 @@
 
 import { StateGraph, START, END } from "@langchain/langgraph";
 import { SqliteSaver } from "@langchain/langgraph-checkpoint-sqlite";
-import { MemorySaver } from "@langchain/langgraph-checkpoint";
 
 import { PipelineState } from "../state/index.js";
 import {
@@ -34,7 +33,7 @@ export interface HITLGraphOptions {
    * Path to SQLite file for persistence.
    * Required for HITL to work (state must survive interrupts).
    */
-  checkpointPath?: string;
+  checkpointPath: string;
 }
 
 /**
@@ -91,11 +90,8 @@ export interface HITLGraphOptions {
  * }
  * ```
  */
-export function createPipelineGraphWithHITL(options: HITLGraphOptions = {}) {
-  // Checkpointer is required for HITL (state must persist across interrupts)
-  const checkpointer = options.checkpointPath
-    ? SqliteSaver.fromConnString(options.checkpointPath)
-    : new MemorySaver();
+export function createPipelineGraphWithHITL(options: HITLGraphOptions) {
+  const checkpointer = SqliteSaver.fromConnString(options.checkpointPath);
 
   // Build the graph with conditional routing
   const builder = new StateGraph(PipelineState)
