@@ -281,9 +281,9 @@
         warning: 'bg-yellow-600'
       };
       toast.className = `toast ${colors[type]} text-white px-4 py-3 rounded-lg shadow-lg flex items-center space-x-2`;
-      toast.innerHTML = `
-        <span>${message}</span>
-      `;
+      const span = document.createElement('span');
+      span.textContent = message;
+      toast.appendChild(span);
       container.appendChild(toast);
       setTimeout(() => toast.remove(), 3000);
     }
