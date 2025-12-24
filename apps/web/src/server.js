@@ -24,7 +24,8 @@ const DB_PATH = join(__dirname, "../../../data/pipeline.sqlite");
 app.use(express.json());
 
 /**
- * Get database connection
+ * Open a read-only SQLite database connection to the configured DB_PATH.
+ * @return {Database|null} The opened Database instance, or `null` if the database could not be opened.
  */
 function getDb() {
   try {
@@ -51,7 +52,10 @@ const PIPELINE_PHASES = [
 ];
 
 /**
- * Determine current pipeline phase based on state
+ * Derive the pipeline phases and their statuses from a checkpoint state.
+ *
+ * @param {Object} state - Checkpoint state containing pipeline fields (e.g., eventType, candidates, dependencies, scoredCandidates, pendingInterrupt, approvedForEnrichment, enrichments, riskAnalyses, exportedPBIs).
+ * @returns {Array<Object>} An ordered array of phase objects ({id, name, short, status}) where `status` is one of `'pending'`, `'active'`, or `'completed'`. The active phase is set to the first non-completed phase following the last completed phase.
  */
 function determineCurrentPhase(state) {
   const phases = PIPELINE_PHASES.map(p => ({ ...p, status: 'pending' }));
@@ -117,7 +121,10 @@ function determineCurrentPhase(state) {
 }
 
 /**
- * Parse checkpoint blob to JSON
+ * Parse a checkpoint payload into its JavaScript value.
+ *
+ * @param {string|Buffer|any} checkpoint - Checkpoint data as a JSON string, a Buffer containing JSON, or an already-parsed value.
+ * @returns {any|null} The parsed checkpoint value, or `null` if parsing fails.
  */
 function parseCheckpoint(checkpoint) {
   try {
