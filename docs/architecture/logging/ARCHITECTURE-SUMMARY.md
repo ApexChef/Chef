@@ -14,7 +14,7 @@ This document summarizes the architecture phase for Chef's centralized logging i
 
 ### 1. Architecture Documentation
 
-**Location**: `/Users/alwin/Projects/github.com/ApexChef/Chef/docs/architecture/logging/`
+**Location**: `docs/architecture/logging/`
 
 **Contents**:
 - ✅ README.md - Architecture overview and index
@@ -387,18 +387,18 @@ None. All architectural decisions have been made and documented.
 
 ### Internal Documentation
 
-- [Architecture Overview](/Users/alwin/Projects/github.com/ApexChef/Chef/docs/architecture/logging/README.md)
-- [ADR Index](/Users/alwin/Projects/github.com/ApexChef/Chef/docs/architecture/logging/decisions/)
-- [API Contracts](/Users/alwin/Projects/github.com/ApexChef/Chef/docs/architecture/logging/api-contracts/typescript-interfaces.md)
-- [Integration Guide](/Users/alwin/Projects/github.com/ApexChef/Chef/docs/architecture/logging/specifications/integration-guide.md)
-- [Deployment Guide](/Users/alwin/Projects/github.com/ApexChef/Chef/docs/architecture/logging/deployment/deployment-guide.md)
+- [Architecture Overview](./README.md)
+- [ADR Index](./decisions/)
+- [API Contracts](./api-contracts/typescript-interfaces.md)
+- [Integration Guide](./specifications/integration-guide.md)
+- [Deployment Guide](./deployment/deployment-guide.md)
 
 ### Preparation Research
 
-- [Executive Summary](/Users/alwin/Projects/github.com/ApexChef/Chef/docs/preparation/logging/01-executive-summary.md)
-- [Library Comparison](/Users/alwin/Projects/github.com/ApexChef/Chef/docs/preparation/logging/09-library-comparison.md)
-- [Context Propagation](/Users/alwin/Projects/github.com/ApexChef/Chef/docs/preparation/logging/05-context-propagation-patterns.md)
-- [Implementation Guide](/Users/alwin/Projects/github.com/ApexChef/Chef/docs/preparation/logging/10-implementation-guide.md)
+- [Executive Summary](../../preparation/logging/01-executive-summary.md)
+- [Library Comparison](../../preparation/logging/09-library-comparison.md)
+- [Context Propagation](../../preparation/logging/05-context-propagation-patterns.md)
+- [Implementation Guide](../../preparation/logging/10-implementation-guide.md)
 
 ### External Resources
 
