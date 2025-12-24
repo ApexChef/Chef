@@ -1,12 +1,15 @@
 /**
- * Detect Event Node
+ * EventDetection Node
  *
- * Graph node wrapper for Step 1: Event Detection
+ * Classifies meeting notes into one of the meeting types:
+ * refinement, planning, standup, retrospective, or other
  */
 
+import type { BaseChatModel } from "@langchain/core/language_models/chat_models";
+import { LLMRouter, getContextLogger, runStep } from "@chef/core";
 import type { PipelineStateType } from "../../state/index.js";
-import { detectEvent } from "../../steps/index.js";
-import { LLMRouter } from "../../../llm/index.js";
+import { EventDetectionSchema } from "../../../schemas/index.js";
+import { eventDetectionPrompt } from "../../../prompts/index.js";
 
 /**
  * Detect the type of meeting from notes
@@ -17,30 +20,46 @@ import { LLMRouter } from "../../../llm/index.js";
 export async function detectEventNode(
   state: PipelineStateType
 ): Promise<Partial<PipelineStateType>> {
-  const startTime = Date.now();
-  const router = new LLMRouter();
+  return runStep('detectEvent', async () => {
+    const logger = getContextLogger();
+    const startTime = Date.now();
+    const router = new LLMRouter();
 
-  console.log("[Graph] Running detectEvent node...");
+    logger.info({
+      inputLength: state.meetingNotes.length
+    }, 'Starting event detection');
 
-  // Call existing step function
-  const result = await detectEvent(state.meetingNotes, router);
+    // Get model with low temperature for consistent classification
+    const model = router.getModel({ temperature: 0 }) as BaseChatModel;
+    const structuredModel = model.withStructuredOutput(EventDetectionSchema);
 
-  const elapsed = Date.now() - startTime;
-  console.log(`[Graph] detectEvent complete (${elapsed}ms)`);
+    // Create and execute chain
+    const chain = eventDetectionPrompt.pipe(structuredModel);
+    const result = await chain.invoke({ meetingNotes: state.meetingNotes });
 
-  // Return partial state update
-  return {
-    eventType: result.eventType,
-    eventConfidence: result.confidence,
-    eventIndicators: result.indicators,
-    metadata: {
-      provider: router.getConfig().provider,
-      model: router.getConfig().model,
-      timestamp: new Date().toISOString(),
-      inputLength: state.meetingNotes.length,
-      stepTimings: {
-        detectEvent: elapsed,
+    const elapsed = Date.now() - startTime;
+
+    logger.info({
+      eventType: result.eventType,
+      confidence: result.confidence,
+      indicators: result.indicators,
+      duration: elapsed
+    }, 'Event detection completed');
+
+    // Return partial state update
+    return {
+      eventType: result.eventType,
+      eventConfidence: result.confidence,
+      eventIndicators: result.indicators,
+      metadata: {
+        provider: router.getConfig().provider,
+        model: router.getConfig().model,
+        timestamp: new Date().toISOString(),
+        inputLength: state.meetingNotes.length,
+        stepTimings: {
+          detectEvent: elapsed,
+        },
       },
-    },
-  };
+    };
+  });
 }

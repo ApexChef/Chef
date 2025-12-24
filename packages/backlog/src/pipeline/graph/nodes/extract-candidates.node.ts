@@ -1,12 +1,14 @@
 /**
- * Extract Candidates Node
+ * CandidateExtraction Node
  *
- * Graph node wrapper for Step 2: Candidate Extraction
+ * Extracts PBI candidates from meeting notes
  */
 
+import type { BaseChatModel } from "@langchain/core/language_models/chat_models";
+import { LLMRouter, getContextLogger, runStep } from "@chef/core";
 import type { PipelineStateType } from "../../state/index.js";
-import { extractCandidates } from "../../steps/index.js";
-import { LLMRouter } from "../../../llm/index.js";
+import { CandidateExtractionSchema } from "../../../schemas/index.js";
+import { candidateExtractionPrompt } from "../../../prompts/index.js";
 
 /**
  * Extract PBI candidates from meeting notes
@@ -17,30 +19,44 @@ import { LLMRouter } from "../../../llm/index.js";
 export async function extractCandidatesNode(
   state: PipelineStateType
 ): Promise<Partial<PipelineStateType>> {
-  const startTime = Date.now();
-  const router = new LLMRouter();
+  return runStep('extractCandidates', async () => {
+    const logger = getContextLogger();
+    const startTime = Date.now();
+    const router = new LLMRouter();
 
-  console.log("[Graph] Running extractCandidates node...");
+    logger.info({
+      eventType: state.eventType,
+      notesLength: state.meetingNotes.length
+    }, 'Starting candidate extraction');
 
-  // Read from shared state - no parameter passing!
-  const result = await extractCandidates(
-    state.meetingNotes,
-    state.eventType,
-    router
-  );
+    // Get model with low temperature for consistent extraction
+    const model = router.getModel({ temperature: 0 }) as BaseChatModel;
+    const structuredModel = model.withStructuredOutput(CandidateExtractionSchema);
 
-  const elapsed = Date.now() - startTime;
-  console.log(`[Graph] extractCandidates complete: ${result.totalFound} candidates (${elapsed}ms)`);
+    // Create and execute chain
+    const chain = candidateExtractionPrompt.pipe(structuredModel);
+    const result = await chain.invoke({
+      meetingNotes: state.meetingNotes,
+      eventType: state.eventType,
+    });
 
-  return {
-    candidates: result.candidates,
-    extractionNotes: result.extractionNotes || "",
-    metadata: {
-      ...state.metadata,
-      stepTimings: {
-        ...state.metadata.stepTimings,
-        extractCandidates: elapsed,
+    const elapsed = Date.now() - startTime;
+
+    logger.info({
+      candidatesFound: result.totalFound,
+      duration: elapsed
+    }, 'Candidate extraction completed');
+
+    return {
+      candidates: result.candidates,
+      extractionNotes: result.extractionNotes || "",
+      metadata: {
+        ...state.metadata,
+        stepTimings: {
+          ...state.metadata.stepTimings,
+          extractCandidates: elapsed,
+        },
       },
-    },
-  };
+    };
+  });
 }

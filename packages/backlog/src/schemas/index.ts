@@ -2,7 +2,7 @@
  * Pipeline schemas
  */
 
-// Event Detection (Step 1)
+// EventDetection phase
 export {
   EventTypeEnum,
   EventDetectionSchema,
@@ -10,7 +10,7 @@ export {
   type EventDetectionResult,
 } from "./event.schema.js";
 
-// Candidate Extraction (Step 2)
+// CandidateExtraction phase
 export {
   PBITypeEnum,
   PBICandidateSchema,
@@ -20,7 +20,22 @@ export {
   type CandidateExtractionResult,
 } from "./candidate.schema.js";
 
-// Confidence Scoring (Step 3)
+// DependencyMapping phase
+export {
+  DependencyTypeEnum,
+  DependencyStrengthEnum,
+  DependencySchema,
+  SequenceAssignmentSchema,
+  DependencyMappingResultSchema,
+  type DependencyType,
+  type DependencyStrength,
+  type Dependency,
+  type SequenceAssignment,
+  type DependencyMappingResult,
+  type CycleDetectionResult,
+} from "./dependency.schema.js";
+
+// ConfidenceScoring phase
 export {
   ScoreBreakdownSchema,
   ScoredCandidateSchema,
@@ -35,7 +50,7 @@ export {
   type ScoreLabel,
 } from "./scoring.schema.js";
 
-// Risk Analysis (Step 5)
+// RiskAnalysis phase
 export {
   RiskLevelEnum,
   RiskItemSchema,
@@ -47,7 +62,7 @@ export {
   type RiskAnalysisResult,
 } from "./risk.schema.js";
 
-// RAG Enrichment (Step 4)
+// ContextEnrichment phase
 export {
   SimilarWorkSchema,
   RelevantADRSchema,
@@ -62,3 +77,37 @@ export {
   type PBIEnrichment,
   type RAGResult,
 } from "./enrichment.schema.js";
+
+// Context Questions (HITL)
+export {
+  QuestionTypeEnum,
+  QuestionOptionSchema,
+  ContextQuestionSchema,
+  PBIContextQuestionsSchema,
+  AnswerStatusEnum,
+  ContextAnswerSchema,
+  ContextSessionStatusEnum,
+  PBIContextResponseSchema,
+  StructuredContextResponseSchema,
+  formatAnswersAsContext,
+  type QuestionType,
+  type QuestionOption,
+  type ContextQuestion,
+  type PBIContextQuestions,
+  type AnswerStatus,
+  type ContextAnswer,
+  type ContextSessionStatus,
+  type PBIContextResponse,
+  type StructuredContextResponse,
+} from "./context-question.schema.js";
+
+// Context History (HITL iteration tracking)
+export {
+  ContextIterationSchema,
+  PBIContextHistorySchema,
+  getLatestIteration,
+  formatContextHistoryForLLM,
+  getContextHistorySummary,
+  type ContextIteration,
+  type PBIContextHistory,
+} from "./context-history.schema.js";

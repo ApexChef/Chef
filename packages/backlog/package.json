@@ -29,9 +29,13 @@
     "@chef/core": "workspace:*",
     "@langchain/core": "^0.3.27",
     "@langchain/langgraph": "^0.2.42",
+    "@langchain/langgraph-checkpoint": "^1.0.0",
+    "@langchain/langgraph-checkpoint-sqlite": "^1.0.0",
+    "better-sqlite3": "^11.7.0",
     "zod": "^3.24.1"
   },
   "devDependencies": {
+    "@types/better-sqlite3": "^7.6.12",
     "@types/node": "^22.10.2",
     "typescript": "^5.7.2"
   }

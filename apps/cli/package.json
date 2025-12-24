@@ -12,9 +12,16 @@
     "bin": "chef",
     "dirname": "chef",
     "commands": {
-      "strategy": "explicit",
-      "target": "./dist/commands/index.js"
+      "strategy": "pattern",
+      "target": "./dist/commands",
+      "globPatterns": [
+        "**/*.js",
+        "!**/index.js"
+      ]
     },
+    "plugins": [
+      "@oclif/plugin-help"
+    ],
     "topicSeparator": " ",
     "topics": {
       "backlog": {
@@ -30,10 +37,13 @@
     "chef": "node --loader ts-node/esm ./bin/dev.js"
   },
   "dependencies": {
-    "@chef/core": "workspace:*",
     "@chef/backlog": "workspace:*",
+    "@chef/core": "workspace:*",
+    "@inquirer/prompts": "^8.1.0",
     "@oclif/core": "^4.2.1",
-    "@oclif/plugin-help": "^6.2.20"
+    "@oclif/plugin-help": "^6.2.20",
+    "chalk": "5",
+    "dotenv": "^16.4.7"
   },
   "devDependencies": {
     "@types/node": "^22.10.2",

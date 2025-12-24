@@ -49,10 +49,10 @@ export class LLMRouter {
    * Load configuration from environment variables and overrides
    */
   private loadConfig(overrides?: Partial<LLMConfig>): LLMConfig {
-    // Get provider from env or default
+    // Get provider: explicit env var > override > auto-detect
     const provider = (process.env.LLM_PROVIDER as LLMProvider) ||
       overrides?.provider ||
-      DEFAULT_CONFIG.provider;
+      this.detectDefaultProvider();
 
     // Get model from env or default for provider
     const model = process.env.LLM_MODEL ||
@@ -65,6 +65,20 @@ export class LLMRouter {
       temperature: overrides?.temperature ?? DEFAULT_CONFIG.temperature,
       maxTokens: overrides?.maxTokens,
     };
+  }
+
+  /**
+   * Auto-detect the best available provider based on API keys
+   *
+   * Priority:
+   * 1. Anthropic (if ANTHROPIC_API_KEY is set)
+   * 2. Ollama (local fallback)
+   */
+  private detectDefaultProvider(): LLMProvider {
+    if (process.env.ANTHROPIC_API_KEY) {
+      return "anthropic";
+    }
+    return "ollama";
   }
 
   /**

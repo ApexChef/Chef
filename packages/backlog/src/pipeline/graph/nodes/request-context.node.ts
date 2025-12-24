@@ -7,7 +7,14 @@
 
 import { interrupt, Command } from "@langchain/langgraph";
 import type { PipelineStateType, PBIHITLStatus } from "../../state/index.js";
-import type { PBICandidate } from "../../schemas/index.js";
+import type {
+  PBICandidate,
+  ContextQuestion,
+  PBIContextResponse,
+  PBIContextHistory,
+  ContextIteration,
+} from "../../../schemas/index.js";
+import { formatAnswersAsContext, formatContextHistoryForLLM } from "../../../schemas/index.js";
 
 /**
  * Interrupt payload for context requests
@@ -22,47 +29,252 @@ export interface ContextInterruptPayload {
     score: number;
     missingElements: string[];
     recommendations: string[];
+    /** @deprecated Use structuredQuestions instead */
     specificQuestions: string[];
+    /** Structured questions with options for interactive prompts */
+    structuredQuestions: ContextQuestion[];
   }>;
 }
 
 /**
- * Expected response format from human
+ * Expected response format from human (legacy string format)
  */
-export interface ContextResponse {
+export interface ContextResponseLegacy {
   contexts: Record<string, string>; // candidateId -> additional context
 }
 
 /**
- * Generate specific questions for what context is needed
+ * Expected response format from human (structured format)
  */
-function generateContextQuestions(
+export interface ContextResponseStructured {
+  responses: PBIContextResponse[];
+}
+
+/**
+ * Union type for backward compatibility
+ */
+export type ContextResponse = ContextResponseLegacy | ContextResponseStructured;
+
+/**
+ * Type guard for structured response
+ */
+function isStructuredResponse(
+  response: ContextResponse
+): response is ContextResponseStructured {
+  return "responses" in response && Array.isArray(response.responses);
+}
+
+/**
+ * Generate structured questions with options based on missing elements
+ */
+export function generateContextQuestions(
+  candidateId: string,
   missingElements: string[],
   recommendations: string[]
-): string[] {
-  const questions: string[] = [];
+): ContextQuestion[] {
+  const questions: ContextQuestion[] = [];
+  let questionIndex = 0;
 
-  // Convert missing elements to questions
+  // Process missing elements and generate appropriate questions
   for (const missing of missingElements.slice(0, 3)) {
-    if (missing.toLowerCase().includes("acceptance criteria")) {
-      questions.push("What specific conditions should be met for this to be considered done?");
-    } else if (missing.toLowerCase().includes("description")) {
-      questions.push("Can you provide more details about what this PBI should accomplish?");
-    } else if (missing.toLowerCase().includes("scope")) {
-      questions.push("What is in scope and out of scope for this PBI?");
+    const lowerMissing = missing.toLowerCase();
+    questionIndex++;
+
+    if (lowerMissing.includes("acceptance criteria")) {
+      questions.push({
+        id: `${candidateId}-q${questionIndex}`,
+        question: "What specific conditions should be met for this to be considered done?",
+        type: "select",
+        category: "acceptance_criteria",
+        required: true,
+        options: [
+          {
+            label: "Functional requirements met",
+            value: "All functional requirements implemented and verified",
+            description: "Core functionality works as specified",
+          },
+          {
+            label: "Tests passing",
+            value: "Unit tests and integration tests pass with >80% coverage",
+            description: "Automated test coverage requirement",
+          },
+          {
+            label: "Code reviewed",
+            value: "Code reviewed and approved by at least one team member",
+            description: "Peer review requirement",
+          },
+          {
+            label: "Documentation updated",
+            value: "Technical documentation and API docs updated",
+            description: "Documentation is current",
+          },
+        ],
+      });
+    } else if (lowerMissing.includes("description") || lowerMissing.includes("details")) {
+      questions.push({
+        id: `${candidateId}-q${questionIndex}`,
+        question: "Can you provide more details about what this PBI should accomplish?",
+        type: "input",
+        category: "description",
+        required: true,
+        placeholder: "Describe the expected behavior, user flow, or technical implementation...",
+      });
+    } else if (lowerMissing.includes("scope")) {
+      questions.push({
+        id: `${candidateId}-q${questionIndex}`,
+        question: "What is in scope and out of scope for this PBI?",
+        type: "select",
+        category: "scope",
+        required: true,
+        options: [
+          {
+            label: "Single component only",
+            value: "Scope limited to a single component or module",
+            description: "Changes isolated to one area",
+          },
+          {
+            label: "Multiple components",
+            value: "Changes span multiple components but within one package",
+            description: "Cross-component but contained",
+          },
+          {
+            label: "Cross-package changes",
+            value: "Changes required across multiple packages",
+            description: "Broader architectural impact",
+          },
+        ],
+      });
+    } else if (lowerMissing.includes("example") || lowerMissing.includes("type definition")) {
+      questions.push({
+        id: `${candidateId}-q${questionIndex}`,
+        question: `Please provide: ${missing}`,
+        type: "input",
+        category: "examples",
+        required: true,
+        placeholder: "Provide code examples, type definitions, or specifications...",
+      });
+    } else if (lowerMissing.includes("dependencies") || lowerMissing.includes("relationship")) {
+      questions.push({
+        id: `${candidateId}-q${questionIndex}`,
+        question: "What are the dependencies or relationships to other components?",
+        type: "select",
+        category: "dependencies",
+        required: true,
+        options: [
+          {
+            label: "No dependencies",
+            value: "Standalone implementation with no external dependencies",
+            description: "Can be implemented independently",
+          },
+          {
+            label: "Depends on existing code",
+            value: "Depends on existing components that are already implemented",
+            description: "Uses existing infrastructure",
+          },
+          {
+            label: "Blocked by other PBIs",
+            value: "Blocked by other PBIs that must be completed first",
+            description: "Has prerequisite work items",
+          },
+          {
+            label: "Enables other work",
+            value: "This PBI enables other work items and should be prioritized",
+            description: "Foundation for future work",
+          },
+        ],
+      });
+    } else if (lowerMissing.includes("success") || lowerMissing.includes("metric") || lowerMissing.includes("validation")) {
+      questions.push({
+        id: `${candidateId}-q${questionIndex}`,
+        question: "How will success be measured for this PBI?",
+        type: "select",
+        category: "success_metrics",
+        required: true,
+        options: [
+          {
+            label: "Automated tests",
+            value: "Success measured by passing automated tests",
+            description: "Test-driven validation",
+          },
+          {
+            label: "Manual verification",
+            value: "Success verified through manual testing and review",
+            description: "Human verification required",
+          },
+          {
+            label: "Performance metrics",
+            value: "Success measured by specific performance benchmarks",
+            description: "Quantitative performance goals",
+          },
+          {
+            label: "User acceptance",
+            value: "Success validated through user acceptance testing",
+            description: "End-user validation",
+          },
+        ],
+      });
     } else {
-      questions.push(`Please provide: ${missing}`);
+      // Generic fallback for unrecognized missing elements
+      questions.push({
+        id: `${candidateId}-q${questionIndex}`,
+        question: `Please provide: ${missing}`,
+        type: "input",
+        category: "general",
+        required: true,
+        placeholder: `Enter details for: ${missing}`,
+      });
     }
   }
 
-  // Add questions from recommendations
+  // Add questions from recommendations (max 2 more)
   for (const rec of recommendations.slice(0, 2)) {
-    if (!questions.some((q) => q.toLowerCase().includes(rec.toLowerCase().slice(0, 20)))) {
-      questions.push(rec.endsWith("?") ? rec : `${rec}?`);
+    const recLower = rec.toLowerCase();
+    // Skip if we already have a similar question
+    if (questions.some((q) => q.question.toLowerCase().includes(recLower.slice(0, 30)))) {
+      continue;
+    }
+
+    questionIndex++;
+    const questionText = rec.endsWith("?") ? rec : `${rec}?`;
+
+    // Try to infer the best question type from the recommendation
+    if (recLower.includes("add") || recLower.includes("include") || recLower.includes("specify")) {
+      questions.push({
+        id: `${candidateId}-q${questionIndex}`,
+        question: questionText,
+        type: "input",
+        category: "recommendation",
+        required: false,
+        placeholder: "Provide the requested information...",
+      });
+    } else if (recLower.includes("consider") || recLower.includes("define") || recLower.includes("choose")) {
+      questions.push({
+        id: `${candidateId}-q${questionIndex}`,
+        question: questionText,
+        type: "confirm",
+        category: "recommendation",
+        required: false,
+      });
+    } else {
+      questions.push({
+        id: `${candidateId}-q${questionIndex}`,
+        question: questionText,
+        type: "input",
+        category: "recommendation",
+        required: false,
+        placeholder: "Your response...",
+      });
     }
   }
 
   return questions.slice(0, 5); // Max 5 questions
+}
+
+/**
+ * Generate legacy string questions for backward compatibility
+ */
+function generateLegacyQuestions(questions: ContextQuestion[]): string[] {
+  return questions.map((q) => q.question);
 }
 
 /**
@@ -94,6 +306,7 @@ export function requestContextNode(state: PipelineStateType): Command {
 
     const missingElements = scored?.missingElements ?? [];
     const recommendations = scored?.recommendations ?? [];
+    const structuredQuestions = generateContextQuestions(id, missingElements, recommendations);
 
     return {
       candidateId: id,
@@ -102,7 +315,8 @@ export function requestContextNode(state: PipelineStateType): Command {
       score: pbiStatus?.score ?? scored?.overallScore ?? 0,
       missingElements,
       recommendations,
-      specificQuestions: generateContextQuestions(missingElements, recommendations),
+      specificQuestions: generateLegacyQuestions(structuredQuestions),
+      structuredQuestions,
     };
   });
 
@@ -119,10 +333,61 @@ export function requestContextNode(state: PipelineStateType): Command {
 
   console.log("[Graph] requestContext: Received human context");
 
+  // Handle both legacy and structured response formats
+  let contextMap: Record<string, string>;
+  let structuredResponses: Map<string, PBIContextResponse> = new Map();
+
+  if (isStructuredResponse(response)) {
+    // Convert structured responses to context strings
+    contextMap = {};
+    for (const pbiResponse of response.responses) {
+      contextMap[pbiResponse.candidateId] = formatAnswersAsContext(pbiResponse);
+      structuredResponses.set(pbiResponse.candidateId, pbiResponse);
+    }
+  } else {
+    // Legacy format - use directly
+    contextMap = response.contexts;
+  }
+
+  // Build context history updates
+  const contextHistoryUpdates: PBIContextHistory[] = pendingIds.map((id) => {
+    const existingHistory = state.contextHistory?.find((h) => h.candidateId === id);
+    const pbiStatus = state.pbiStatuses.find((s) => s.candidateId === id);
+    const scored = state.scoredCandidates.find((c) => c.candidateId === id);
+    const requestInfo = requests.find((r) => r.candidateId === id);
+    const structuredResponse = structuredResponses.get(id);
+
+    const currentIteration = (existingHistory?.totalIterations ?? 0) + 1;
+
+    // Build the iteration record
+    const iteration: ContextIteration = {
+      iteration: currentIteration,
+      timestamp: new Date().toISOString(),
+      scoreBefore: pbiStatus?.score ?? scored?.overallScore ?? 0,
+      questions: requestInfo?.structuredQuestions ?? [],
+      response: structuredResponse ?? {
+        candidateId: id,
+        answers: [],
+        additionalContext: contextMap[id] ?? "",
+        status: "completed",
+        lastQuestionIndex: 0,
+      },
+      missingElements: requestInfo?.missingElements ?? [],
+      recommendations: requestInfo?.recommendations ?? [],
+    };
+
+    return {
+      candidateId: id,
+      iterations: [iteration],
+      totalIterations: currentIteration,
+      status: "in_progress" as const,
+    };
+  });
+
   // Update statuses with human-provided context
   const updatedStatuses: PBIHITLStatus[] = pendingIds.map((id) => {
     const existing = state.pbiStatuses.find((s) => s.candidateId === id);
-    const humanContext = response.contexts[id] ?? "";
+    const humanContext = contextMap[id] ?? "";
 
     return {
       candidateId: id,
@@ -134,20 +399,30 @@ export function requestContextNode(state: PipelineStateType): Command {
     };
   });
 
-  // Also update candidates with human context (append to existing)
+  // Also update candidates with human context
+  // Now use contextHistory to generate the full context string
   const updatedCandidates: PBICandidate[] = pendingIds.map((id) => {
     const candidate = state.candidates.find((c) => c.id === id);
-    const newContext = response.contexts[id] ?? "";
-    const existingContext = candidate?.humanContext ?? "";
+    const existingHistory = state.contextHistory?.find((h) => h.candidateId === id);
+    const newHistory = contextHistoryUpdates.find((h) => h.candidateId === id);
 
-    // Append new context to existing (if any)
-    const combinedContext = existingContext
-      ? `${existingContext}\n\n---\n\n${newContext}`
-      : newContext;
+    // Merge histories for generating full context
+    const mergedHistory: PBIContextHistory = {
+      candidateId: id,
+      iterations: [
+        ...(existingHistory?.iterations ?? []),
+        ...(newHistory?.iterations ?? []),
+      ],
+      totalIterations: newHistory?.totalIterations ?? 1,
+      status: "in_progress",
+    };
+
+    // Generate full context from history
+    const fullContext = formatContextHistoryForLLM(mergedHistory);
 
     return {
       ...candidate!,
-      humanContext: combinedContext,
+      humanContext: fullContext,
       // Clear consolidated description to force re-consolidation
       consolidatedDescription: undefined,
     };
@@ -159,6 +434,7 @@ export function requestContextNode(state: PipelineStateType): Command {
     update: {
       pbiStatuses: updatedStatuses,
       candidates: updatedCandidates,
+      contextHistory: contextHistoryUpdates,
       pendingInterrupt: null, // Clear the interrupt
     },
   });

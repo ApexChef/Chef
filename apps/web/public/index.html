@@ -1,0 +1,1046 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Chef Pipeline Viewer</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    .dependency-line { stroke: #6366f1; stroke-width: 2; fill: none; }
+    .node-circle { fill: #4f46e5; }
+    .node-text { fill: white; font-size: 12px; font-weight: bold; }
+    .toast {
+      animation: slideIn 0.3s ease-out, fadeOut 0.3s ease-in 2.7s forwards;
+    }
+    @keyframes slideIn {
+      from { transform: translateX(100%); opacity: 0; }
+      to { transform: translateX(0); opacity: 1; }
+    }
+    @keyframes fadeOut {
+      from { opacity: 1; }
+      to { opacity: 0; }
+    }
+  </style>
+</head>
+<body class="bg-gray-900 text-gray-100 min-h-screen">
+  <!-- Toast Container -->
+  <div id="toastContainer" class="fixed top-4 right-4 z-50 space-y-2"></div>
+
+  <div class="container mx-auto px-4 py-8">
+    <!-- Header -->
+    <header class="mb-8">
+      <div class="flex justify-between items-start">
+        <div>
+          <h1 class="text-3xl font-bold text-indigo-400">Chef Pipeline Viewer</h1>
+          <p class="text-gray-400">View backlog pipeline results from the checkpoint database</p>
+        </div>
+        <div id="threadIdDisplay" class="hidden text-right">
+          <div class="text-xs text-gray-500">Thread ID</div>
+          <code id="currentThreadId" class="text-sm text-indigo-400 bg-gray-800 px-2 py-1 rounded cursor-pointer hover:bg-gray-700" title="Click to copy"></code>
+          <div id="pollingIndicator" class="text-xs text-green-400 mt-1">● Auto-refresh active</div>
+        </div>
+      </div>
+    </header>
+
+    <!-- Thread Selector -->
+    <div class="mb-8">
+      <label class="block text-sm font-medium text-gray-300 mb-2">Select Pipeline Run</label>
+      <select id="threadSelect" class="bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 w-full max-w-md focus:ring-indigo-500 focus:border-indigo-500">
+        <option value="">Loading...</option>
+      </select>
+    </div>
+
+    <!-- Main Content -->
+    <div id="content" class="hidden">
+      <!-- Pipeline Phase Indicator -->
+      <div class="mb-8 bg-gray-800 rounded-lg p-4">
+        <div class="flex items-center justify-between" id="pipelinePhases">
+          <!-- Phases will be rendered here -->
+        </div>
+      </div>
+
+      <!-- Summary Cards -->
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+        <div class="bg-gray-800 rounded-lg p-4">
+          <div class="text-gray-400 text-sm">Event Type</div>
+          <div id="eventType" class="text-2xl font-bold text-indigo-400">-</div>
+        </div>
+        <div class="bg-gray-800 rounded-lg p-4">
+          <div class="text-gray-400 text-sm">Candidates</div>
+          <div id="candidateCount" class="text-2xl font-bold text-green-400">0</div>
+        </div>
+        <div class="bg-gray-800 rounded-lg p-4">
+          <div class="text-gray-400 text-sm">Dependencies</div>
+          <div id="dependencyCount" class="text-2xl font-bold text-yellow-400">0</div>
+        </div>
+        <div class="bg-gray-800 rounded-lg p-4">
+          <div class="text-gray-400 text-sm">Avg Score</div>
+          <div id="avgScore" class="text-2xl font-bold text-blue-400">-</div>
+        </div>
+      </div>
+
+      <!-- Tabs -->
+      <div class="border-b border-gray-700 mb-6">
+        <nav class="flex space-x-4">
+          <button class="tab-btn active px-4 py-2 text-indigo-400 border-b-2 border-indigo-400" data-tab="source">
+            Source
+          </button>
+          <button class="tab-btn px-4 py-2 text-gray-400 hover:text-gray-200" data-tab="candidates">
+            Candidates
+          </button>
+          <button class="tab-btn px-4 py-2 text-gray-400 hover:text-gray-200" data-tab="dependencies">
+            Dependencies
+          </button>
+          <button class="tab-btn px-4 py-2 text-gray-400 hover:text-gray-200" data-tab="scores">
+            Scores
+          </button>
+          <button class="tab-btn px-4 py-2 text-gray-400 hover:text-gray-200" data-tab="graph">
+            Dependency Graph
+          </button>
+          <button class="tab-btn px-4 py-2 text-gray-400 hover:text-gray-200" data-tab="raw">
+            Raw JSON
+          </button>
+        </nav>
+      </div>
+
+      <!-- Tab Content -->
+      <div id="tab-source" class="tab-content">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <!-- Meeting Notes -->
+          <div class="bg-gray-800 rounded-lg p-4">
+            <h3 class="text-lg font-semibold text-indigo-400 mb-3">Meeting Notes</h3>
+            <pre id="meetingNotes" class="whitespace-pre-wrap text-sm text-gray-300 max-h-96 overflow-y-auto"></pre>
+          </div>
+          <!-- Event Detection -->
+          <div class="bg-gray-800 rounded-lg p-4">
+            <h3 class="text-lg font-semibold text-indigo-400 mb-3">Event Detection</h3>
+            <div class="space-y-3">
+              <div>
+                <span class="text-gray-500 text-sm">Type:</span>
+                <span id="eventTypeDetail" class="ml-2 text-lg font-semibold"></span>
+              </div>
+              <div>
+                <span class="text-gray-500 text-sm">Confidence:</span>
+                <span id="eventConfidenceDetail" class="ml-2"></span>
+              </div>
+              <div>
+                <span class="text-gray-500 text-sm block mb-1">Indicators:</span>
+                <ul id="eventIndicators" class="list-disc list-inside text-sm text-gray-300"></ul>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="tab-candidates" class="tab-content hidden">
+        <div id="candidatesTable" class="overflow-x-auto">
+          <table class="w-full text-left">
+            <thead class="bg-gray-800">
+              <tr>
+                <th class="px-4 py-3">ID</th>
+                <th class="px-4 py-3">Title</th>
+                <th class="px-4 py-3">Type</th>
+                <th class="px-4 py-3">Status</th>
+                <th class="px-4 py-3">Sequence</th>
+                <th class="px-4 py-3">Parallel</th>
+                <th class="px-4 py-3">Score</th>
+              </tr>
+            </thead>
+            <tbody id="candidatesBody" class="divide-y divide-gray-700">
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div id="tab-dependencies" class="tab-content hidden">
+        <div class="overflow-x-auto">
+          <table class="w-full text-left">
+            <thead class="bg-gray-800">
+              <tr>
+                <th class="px-4 py-3">Source</th>
+                <th class="px-4 py-3">Target</th>
+                <th class="px-4 py-3">Type</th>
+                <th class="px-4 py-3">Strength</th>
+                <th class="px-4 py-3">Reason</th>
+              </tr>
+            </thead>
+            <tbody id="dependenciesBody" class="divide-y divide-gray-700">
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div id="tab-scores" class="tab-content hidden">
+        <div id="scoresContainer" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        </div>
+      </div>
+
+      <div id="tab-graph" class="tab-content hidden">
+        <div class="bg-gray-800 rounded-lg p-4">
+          <svg id="dependencyGraph" width="100%" height="400"></svg>
+        </div>
+        <div id="graphLegend" class="mt-4 text-sm text-gray-400">
+          <span class="inline-block mr-4"><span class="inline-block w-3 h-3 bg-green-500 rounded-full mr-1"></span> Can Parallelize</span>
+          <span class="inline-block mr-4"><span class="inline-block w-3 h-3 bg-indigo-500 rounded-full mr-1"></span> Sequential</span>
+          <span class="inline-block"><span class="inline-block w-8 h-0.5 bg-indigo-400 mr-1"></span> Blocks</span>
+        </div>
+      </div>
+
+      <div id="tab-raw" class="tab-content hidden">
+        <pre id="rawJson" class="bg-gray-800 rounded-lg p-4 overflow-x-auto text-sm text-green-400"></pre>
+      </div>
+    </div>
+
+    <!-- Empty State -->
+    <div id="emptyState" class="text-center py-16 text-gray-500">
+      <p>Select a pipeline run to view details</p>
+    </div>
+
+    <!-- Approval Panel (shown when PBIs await approval) -->
+    <div id="approvalPanel" class="hidden fixed bottom-0 left-0 right-0 bg-gray-800 border-t border-yellow-500 shadow-lg z-50">
+      <div class="container mx-auto px-4 py-4">
+        <div class="flex items-center justify-between mb-4">
+          <div class="flex items-center">
+            <span class="text-yellow-400 text-xl mr-3">!</span>
+            <div>
+              <h3 class="text-lg font-semibold text-yellow-400">Human Approval Required</h3>
+              <p id="approvalMessage" class="text-sm text-gray-400"></p>
+            </div>
+          </div>
+          <div class="flex space-x-2">
+            <button id="approveAllBtn" class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm font-medium">
+              Approve All
+            </button>
+            <button id="rejectAllBtn" class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-medium">
+              Reject All
+            </button>
+            <button id="toggleApprovalDetails" class="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg text-sm">
+              Show Details
+            </button>
+          </div>
+        </div>
+
+        <!-- Approval Details (expandable) -->
+        <div id="approvalDetails" class="hidden max-h-96 overflow-y-auto">
+          <div id="approvalList" class="space-y-3">
+            <!-- Approval items will be rendered here -->
+          </div>
+          <div class="mt-4 flex justify-end">
+            <button id="submitApprovalsBtn" class="px-6 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-medium">
+              Submit Decisions
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Context Request Panel -->
+    <div id="contextPanel" class="hidden fixed bottom-0 left-0 right-0 bg-gray-800 border-t border-orange-500 shadow-lg z-50">
+      <div class="container mx-auto px-4 py-4">
+        <div class="flex items-center justify-between mb-4">
+          <div class="flex items-center">
+            <span class="text-orange-400 text-xl mr-3">?</span>
+            <div>
+              <h3 class="text-lg font-semibold text-orange-400">Additional Context Required</h3>
+              <p id="contextMessage" class="text-sm text-gray-400"></p>
+            </div>
+          </div>
+          <button id="toggleContextDetails" class="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg text-sm">
+            Show Details
+          </button>
+        </div>
+
+        <!-- Context Details (expandable) -->
+        <div id="contextDetails" class="hidden max-h-96 overflow-y-auto">
+          <div id="contextList" class="space-y-4">
+            <!-- Context request items will be rendered here -->
+          </div>
+          <div class="mt-4 flex justify-end">
+            <button id="submitContextBtn" class="px-6 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-medium">
+              Submit Context
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let currentData = null;
+    let pollingInterval = null;
+    const POLL_INTERVAL_MS = 5000; // Poll every 5 seconds
+
+    // Show toast notification
+    function showToast(message, type = 'success') {
+      const container = document.getElementById('toastContainer');
+      const toast = document.createElement('div');
+      const colors = {
+        success: 'bg-green-600',
+        error: 'bg-red-600',
+        info: 'bg-indigo-600',
+        warning: 'bg-yellow-600'
+      };
+      toast.className = `toast ${colors[type]} text-white px-4 py-3 rounded-lg shadow-lg flex items-center space-x-2`;
+      const span = document.createElement('span');
+      span.textContent = message;
+      toast.appendChild(span);
+      container.appendChild(toast);
+      setTimeout(() => toast.remove(), 3000);
+    }
+
+    // Update URL with thread ID
+    function updateURL(threadId) {
+      const url = new URL(window.location);
+      if (threadId) {
+        url.searchParams.set('thread', threadId);
+      } else {
+        url.searchParams.delete('thread');
+      }
+      window.history.replaceState({}, '', url);
+    }
+
+    // Get thread ID from URL
+    function getThreadFromURL() {
+      const url = new URL(window.location);
+      return url.searchParams.get('thread');
+    }
+
+    // Start polling for updates
+    function startPolling(threadId) {
+      stopPolling();
+      document.getElementById('pollingIndicator').classList.remove('hidden');
+      pollingInterval = setInterval(async () => {
+        try {
+          await loadThread(threadId, true); // silent refresh
+        } catch (error) {
+          console.error('Polling error:', error);
+        }
+      }, POLL_INTERVAL_MS);
+    }
+
+    // Stop polling
+    function stopPolling() {
+      if (pollingInterval) {
+        clearInterval(pollingInterval);
+        pollingInterval = null;
+      }
+      document.getElementById('pollingIndicator')?.classList.add('hidden');
+    }
+
+    // Initialize
+    async function init() {
+      await loadThreads();
+      setupTabs();
+
+      // Check URL for thread ID
+      const urlThreadId = getThreadFromURL();
+      if (urlThreadId) {
+        document.getElementById('threadSelect').value = urlThreadId;
+        await loadThread(urlThreadId);
+      }
+
+      // Setup thread ID copy on click
+      document.getElementById('currentThreadId').addEventListener('click', () => {
+        navigator.clipboard.writeText(currentData?.threadId || '');
+        showToast('Thread ID copied to clipboard', 'info');
+      });
+    }
+
+    // Load threads
+    async function loadThreads() {
+      try {
+        const res = await fetch('/api/threads');
+        const threads = await res.json();
+
+        const select = document.getElementById('threadSelect');
+        select.innerHTML = '<option value="">Select a pipeline run...</option>';
+
+        threads.forEach(t => {
+          const option = document.createElement('option');
+          option.value = t.thread_id;
+          option.textContent = `${t.thread_id} (${t.checkpoint_count} checkpoints)`;
+          select.appendChild(option);
+        });
+
+        select.addEventListener('change', (e) => {
+          if (e.target.value) loadThread(e.target.value);
+        });
+      } catch (error) {
+        console.error('Failed to load threads:', error);
+      }
+    }
+
+    // Load thread details
+    async function loadThread(threadId, silent = false) {
+      try {
+        const res = await fetch(`/api/threads/${threadId}`);
+        currentData = await res.json();
+
+        document.getElementById('content').classList.remove('hidden');
+        document.getElementById('emptyState').classList.add('hidden');
+
+        // Update URL and show thread ID
+        updateURL(threadId);
+        document.getElementById('threadIdDisplay').classList.remove('hidden');
+        document.getElementById('currentThreadId').textContent = threadId;
+
+        renderPhases();
+        renderSummary();
+        renderSource();
+        renderCandidates();
+        renderDependencies();
+        renderScores();
+        renderGraph();
+        renderRaw();
+
+        // Check for pending HITL interrupts
+        await checkPendingInterrupts(threadId);
+
+        // Start polling for updates (only on initial load, not silent refresh)
+        if (!silent) {
+          startPolling(threadId);
+        }
+      } catch (error) {
+        console.error('Failed to load thread:', error);
+        if (!silent) {
+          showToast('Failed to load thread', 'error');
+        }
+      }
+    }
+
+    // Render pipeline phases
+    function renderPhases() {
+      const phases = currentData.currentPhase || [];
+      const container = document.getElementById('pipelinePhases');
+
+      container.innerHTML = phases.map((phase, i) => {
+        const isLast = i === phases.length - 1;
+        const statusColors = {
+          completed: 'bg-green-500 text-white',
+          active: 'bg-indigo-500 text-white animate-pulse',
+          pending: 'bg-gray-600 text-gray-400'
+        };
+        const lineColor = phase.status === 'completed' ? 'bg-green-500' : 'bg-gray-600';
+
+        return `
+          <div class="flex items-center ${isLast ? '' : 'flex-1'}">
+            <div class="flex flex-col items-center">
+              <div class="w-8 h-8 rounded-full ${statusColors[phase.status]} flex items-center justify-center text-xs font-bold">
+                ${phase.status === 'completed' ? '✓' : (i + 1)}
+              </div>
+              <div class="text-xs mt-1 ${phase.status === 'active' ? 'text-indigo-400 font-semibold' : 'text-gray-500'}">${phase.short}</div>
+            </div>
+            ${!isLast ? `<div class="flex-1 h-0.5 mx-2 ${lineColor}"></div>` : ''}
+          </div>
+        `;
+      }).join('');
+    }
+
+    // Render summary cards
+    function renderSummary() {
+      const state = currentData.state;
+      document.getElementById('eventType').textContent = state.eventType || '-';
+      document.getElementById('candidateCount').textContent = state.candidates.length;
+      document.getElementById('dependencyCount').textContent = state.dependencies.length;
+      document.getElementById('avgScore').textContent = state.averageScore ? `${state.averageScore}/100` : '-';
+    }
+
+    // Render source tab
+    function renderSource() {
+      const state = currentData.state;
+
+      // Meeting notes
+      document.getElementById('meetingNotes').textContent = state.meetingNotes || 'No meeting notes available';
+
+      // Event detection details
+      document.getElementById('eventTypeDetail').textContent = state.eventType || '-';
+      document.getElementById('eventTypeDetail').className = `ml-2 text-lg font-semibold ${getEventTypeColor(state.eventType)}`;
+
+      document.getElementById('eventConfidenceDetail').textContent = state.eventConfidence
+        ? `${state.eventConfidence}%`
+        : '-';
+
+      const indicatorsList = document.getElementById('eventIndicators');
+      if (state.eventIndicators && state.eventIndicators.length > 0) {
+        indicatorsList.innerHTML = state.eventIndicators.map(i => `<li>${i}</li>`).join('');
+      } else {
+        indicatorsList.innerHTML = '<li class="text-gray-500">No indicators detected</li>';
+      }
+    }
+
+    // Get event type color
+    function getEventTypeColor(type) {
+      const colors = {
+        refinement: 'text-blue-400',
+        planning: 'text-green-400',
+        retrospective: 'text-yellow-400',
+        standup: 'text-purple-400',
+        review: 'text-orange-400',
+      };
+      return colors[type] || 'text-gray-400';
+    }
+
+    // Render candidates table
+    function renderCandidates() {
+      const tbody = document.getElementById('candidatesBody');
+      const state = currentData.state;
+
+      tbody.innerHTML = state.candidates.map(c => {
+        const score = state.scoredCandidates.find(s => s.candidateId === c.id);
+        const pbiStatus = state.pbiStatuses.find(s => s.candidateId === c.id);
+        const status = pbiStatus?.status || 'pending';
+
+        return `
+          <tr class="hover:bg-gray-800">
+            <td class="px-4 py-3 font-mono text-indigo-400">${c.id}</td>
+            <td class="px-4 py-3">${c.title}</td>
+            <td class="px-4 py-3">
+              <span class="px-2 py-1 rounded text-xs ${getTypeColor(c.type)}">${c.type}</span>
+            </td>
+            <td class="px-4 py-3">
+              <span class="px-2 py-1 rounded text-xs ${getStatusColor(status)}">${formatStatus(status)}</span>
+            </td>
+            <td class="px-4 py-3 text-center">${c.sequence || '-'}</td>
+            <td class="px-4 py-3 text-center">
+              ${c.canParallelize ? '<span class="text-green-400">✓</span>' : '<span class="text-gray-500">-</span>'}
+            </td>
+            <td class="px-4 py-3">
+              ${score ? `<span class="${getScoreColor(score.overallScore)}">${score.overallScore}</span>` : '-'}
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    // Get status color
+    function getStatusColor(status) {
+      const colors = {
+        pending: 'bg-gray-700 text-gray-300',
+        awaiting_approval: 'bg-yellow-900 text-yellow-300',
+        awaiting_context: 'bg-orange-900 text-orange-300',
+        approved: 'bg-green-900 text-green-300',
+        auto_approved: 'bg-green-900 text-green-300',
+        rejected: 'bg-red-900 text-red-300',
+        exported: 'bg-blue-900 text-blue-300',
+      };
+      return colors[status] || 'bg-gray-700 text-gray-300';
+    }
+
+    // Format status for display
+    function formatStatus(status) {
+      const labels = {
+        pending: 'Pending',
+        awaiting_approval: 'Awaiting Approval',
+        awaiting_context: 'Needs Context',
+        approved: 'Approved',
+        auto_approved: 'Auto-Approved',
+        rejected: 'Rejected',
+        exported: 'Exported',
+      };
+      return labels[status] || status;
+    }
+
+    // Render dependencies table
+    function renderDependencies() {
+      const tbody = document.getElementById('dependenciesBody');
+      const deps = currentData.state.dependencies;
+
+      tbody.innerHTML = deps.map(d => `
+        <tr class="hover:bg-gray-800">
+          <td class="px-4 py-3 font-mono text-indigo-400">${d.source}</td>
+          <td class="px-4 py-3 font-mono text-green-400">${d.target}</td>
+          <td class="px-4 py-3">
+            <span class="px-2 py-1 rounded text-xs ${getDepTypeColor(d.type)}">${d.type}</span>
+          </td>
+          <td class="px-4 py-3">
+            <span class="px-2 py-1 rounded text-xs ${d.strength === 'hard' ? 'bg-red-900 text-red-300' : 'bg-yellow-900 text-yellow-300'}">${d.strength}</span>
+          </td>
+          <td class="px-4 py-3 text-gray-400">${d.reason}</td>
+        </tr>
+      `).join('');
+    }
+
+    // Render scores
+    function renderScores() {
+      const container = document.getElementById('scoresContainer');
+      const state = currentData.state;
+
+      container.innerHTML = state.scoredCandidates.map(s => {
+        const candidate = state.candidates.find(c => c.id === s.candidateId);
+        return `
+          <div class="bg-gray-800 rounded-lg p-4">
+            <div class="flex justify-between items-start mb-3">
+              <div>
+                <div class="font-mono text-indigo-400">${s.candidateId}</div>
+                <div class="text-sm text-gray-400">${candidate?.title || ''}</div>
+              </div>
+              <div class="text-2xl font-bold ${getScoreColor(s.overallScore)}">${s.overallScore}</div>
+            </div>
+            <div class="grid grid-cols-4 gap-2 text-center text-sm mb-3">
+              <div>
+                <div class="text-gray-500">Complete</div>
+                <div class="${getScoreColor(s.scores?.completeness)}">${s.scores?.completeness || '-'}</div>
+              </div>
+              <div>
+                <div class="text-gray-500">Clarity</div>
+                <div class="${getScoreColor(s.scores?.clarity)}">${s.scores?.clarity || '-'}</div>
+              </div>
+              <div>
+                <div class="text-gray-500">Action</div>
+                <div class="${getScoreColor(s.scores?.actionability)}">${s.scores?.actionability || '-'}</div>
+              </div>
+              <div>
+                <div class="text-gray-500">Test</div>
+                <div class="${getScoreColor(s.scores?.testability)}">${s.scores?.testability || '-'}</div>
+              </div>
+            </div>
+            ${s.strengths?.length ? `
+              <div class="mb-2">
+                <div class="text-xs text-green-400 mb-1">Strengths</div>
+                <ul class="text-sm text-gray-300 list-disc list-inside">
+                  ${s.strengths.slice(0,2).map(str => `<li>${str}</li>`).join('')}
+                </ul>
+              </div>
+            ` : ''}
+            ${s.concerns?.length ? `
+              <div>
+                <div class="text-xs text-yellow-400 mb-1">Concerns</div>
+                <ul class="text-sm text-gray-300 list-disc list-inside">
+                  ${s.concerns.slice(0,2).map(c => `<li>${c}</li>`).join('')}
+                </ul>
+              </div>
+            ` : ''}
+          </div>
+        `;
+      }).join('');
+    }
+
+    // Render dependency graph
+    function renderGraph() {
+      const svg = document.getElementById('dependencyGraph');
+      const state = currentData.state;
+      const candidates = state.candidates;
+      const deps = state.dependencies;
+
+      if (!candidates.length) {
+        svg.innerHTML = '<text x="50%" y="50%" text-anchor="middle" fill="#6b7280">No candidates</text>';
+        return;
+      }
+
+      // Group by sequence
+      const sequences = {};
+      candidates.forEach(c => {
+        const seq = c.sequence || 1;
+        if (!sequences[seq]) sequences[seq] = [];
+        sequences[seq].push(c);
+      });
+
+      const seqKeys = Object.keys(sequences).sort((a,b) => a - b);
+      const width = svg.clientWidth || 800;
+      const height = 400;
+      const nodeRadius = 30;
+      const levelWidth = width / (seqKeys.length + 1);
+
+      // Calculate positions
+      const positions = {};
+      seqKeys.forEach((seq, i) => {
+        const nodes = sequences[seq];
+        const levelHeight = height / (nodes.length + 1);
+        nodes.forEach((node, j) => {
+          positions[node.id] = {
+            x: levelWidth * (i + 1),
+            y: levelHeight * (j + 1),
+            node
+          };
+        });
+      });
+
+      // Draw edges
+      let edgesHtml = '';
+      deps.forEach(d => {
+        const source = positions[d.source];
+        const target = positions[d.target];
+        if (source && target) {
+          edgesHtml += `<line x1="${target.x}" y1="${target.y}" x2="${source.x}" y2="${source.y}" class="dependency-line" marker-end="url(#arrowhead)"/>`;
+        }
+      });
+
+      // Draw nodes
+      let nodesHtml = '';
+      Object.entries(positions).forEach(([id, pos]) => {
+        const fillColor = pos.node.canParallelize ? '#22c55e' : '#4f46e5';
+        nodesHtml += `
+          <g transform="translate(${pos.x}, ${pos.y})">
+            <circle r="${nodeRadius}" fill="${fillColor}" class="cursor-pointer hover:opacity-80"/>
+            <text text-anchor="middle" dy="5" fill="white" font-size="12" font-weight="bold">${id.replace('PBI-', '')}</text>
+          </g>
+        `;
+      });
+
+      svg.innerHTML = `
+        <defs>
+          <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="35" refY="3.5" orient="auto">
+            <polygon points="0 0, 10 3.5, 0 7" fill="#6366f1"/>
+          </marker>
+        </defs>
+        ${edgesHtml}
+        ${nodesHtml}
+      `;
+    }
+
+    // Render raw JSON
+    function renderRaw() {
+      document.getElementById('rawJson').textContent = JSON.stringify(currentData, null, 2);
+    }
+
+    // Setup tabs
+    function setupTabs() {
+      document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          document.querySelectorAll('.tab-btn').forEach(b => {
+            b.classList.remove('active', 'text-indigo-400', 'border-b-2', 'border-indigo-400');
+            b.classList.add('text-gray-400');
+          });
+          btn.classList.add('active', 'text-indigo-400', 'border-b-2', 'border-indigo-400');
+          btn.classList.remove('text-gray-400');
+
+          document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
+          document.getElementById(`tab-${btn.dataset.tab}`).classList.remove('hidden');
+
+          if (btn.dataset.tab === 'graph') renderGraph();
+        });
+      });
+    }
+
+    // Helper functions
+    function getTypeColor(type) {
+      const colors = {
+        feature: 'bg-blue-900 text-blue-300',
+        bug: 'bg-red-900 text-red-300',
+        'tech-debt': 'bg-yellow-900 text-yellow-300',
+        spike: 'bg-purple-900 text-purple-300',
+      };
+      return colors[type] || 'bg-gray-700 text-gray-300';
+    }
+
+    function getDepTypeColor(type) {
+      const colors = {
+        blocks: 'bg-red-900 text-red-300',
+        'relates-to': 'bg-blue-900 text-blue-300',
+        extends: 'bg-green-900 text-green-300',
+      };
+      return colors[type] || 'bg-gray-700 text-gray-300';
+    }
+
+    function getScoreColor(score) {
+      if (!score) return 'text-gray-500';
+      if (score >= 75) return 'text-green-400';
+      if (score >= 50) return 'text-yellow-400';
+      return 'text-red-400';
+    }
+
+    // ============================================
+    // HITL Approval Handling
+    // ============================================
+
+    let pendingApprovals = [];
+    let pendingContexts = [];
+    let approvalDecisions = {};
+    let contextResponses = {};
+
+    // Check for pending interrupts
+    async function checkPendingInterrupts(threadId) {
+      try {
+        const res = await fetch(`/api/threads/${threadId}/pending`);
+        const data = await res.json();
+
+        // Hide both panels first
+        document.getElementById('approvalPanel').classList.add('hidden');
+        document.getElementById('contextPanel').classList.add('hidden');
+
+        if (data.type === 'approval') {
+          pendingApprovals = data.candidates || [];
+          showApprovalPanel(data.message, pendingApprovals);
+        } else if (data.type === 'context') {
+          pendingContexts = data.requests || [];
+          showContextPanel(data.message, pendingContexts);
+        }
+      } catch (error) {
+        console.error('Failed to check pending interrupts:', error);
+      }
+    }
+
+    // Show approval panel
+    function showApprovalPanel(message, candidates) {
+      document.getElementById('approvalMessage').textContent =
+        `${candidates.length} PBI(s) need your approval to continue`;
+
+      // Initialize decisions
+      approvalDecisions = {};
+      candidates.forEach(c => {
+        approvalDecisions[c.candidateId] = null; // Not yet decided
+      });
+
+      // Render approval list
+      const list = document.getElementById('approvalList');
+      list.innerHTML = candidates.map(c => `
+        <div class="bg-gray-700 rounded-lg p-4" data-candidate-id="${c.candidateId}">
+          <div class="flex justify-between items-start mb-2">
+            <div>
+              <span class="font-mono text-indigo-400">${c.candidateId}</span>
+              <span class="ml-2 text-gray-300">${c.title}</span>
+            </div>
+            <span class="${getScoreColor(c.score)} font-bold">${c.score}/100 (${c.scoreLabel})</span>
+          </div>
+          ${c.strengths?.length ? `
+            <div class="mb-2">
+              <span class="text-xs text-green-400">Strengths:</span>
+              <span class="text-sm text-gray-300">${c.strengths.slice(0,2).join('; ')}</span>
+            </div>
+          ` : ''}
+          ${c.concerns?.length ? `
+            <div class="mb-2">
+              <span class="text-xs text-yellow-400">Concerns:</span>
+              <span class="text-sm text-gray-300">${c.concerns.slice(0,2).join('; ')}</span>
+            </div>
+          ` : ''}
+          <div class="flex space-x-2 mt-3">
+            <button class="approve-btn px-4 py-1.5 bg-green-600 hover:bg-green-700 text-white rounded text-sm"
+                    data-id="${c.candidateId}">
+              Approve
+            </button>
+            <button class="reject-btn px-4 py-1.5 bg-red-600 hover:bg-red-700 text-white rounded text-sm"
+                    data-id="${c.candidateId}">
+              Reject
+            </button>
+            <span class="decision-indicator ml-2 text-sm hidden"></span>
+          </div>
+        </div>
+      `).join('');
+
+      // Add event listeners
+      list.querySelectorAll('.approve-btn').forEach(btn => {
+        btn.addEventListener('click', () => setApprovalDecision(btn.dataset.id, 'approve'));
+      });
+      list.querySelectorAll('.reject-btn').forEach(btn => {
+        btn.addEventListener('click', () => setApprovalDecision(btn.dataset.id, 'reject'));
+      });
+
+      document.getElementById('approvalPanel').classList.remove('hidden');
+    }
+
+    // Set individual approval decision
+    function setApprovalDecision(candidateId, decision) {
+      approvalDecisions[candidateId] = decision;
+
+      // Update UI
+      const container = document.querySelector(`[data-candidate-id="${candidateId}"]`);
+      const indicator = container.querySelector('.decision-indicator');
+      indicator.classList.remove('hidden');
+      indicator.textContent = decision === 'approve' ? '✓ Approved' : '✗ Rejected';
+      indicator.className = `decision-indicator ml-2 text-sm ${decision === 'approve' ? 'text-green-400' : 'text-red-400'}`;
+
+      // Highlight the selected button
+      container.querySelectorAll('.approve-btn, .reject-btn').forEach(btn => {
+        btn.classList.remove('ring-2', 'ring-white');
+      });
+      container.querySelector(decision === 'approve' ? '.approve-btn' : '.reject-btn')
+        .classList.add('ring-2', 'ring-white');
+    }
+
+    // Show context panel
+    function showContextPanel(message, requests) {
+      document.getElementById('contextMessage').textContent =
+        `${requests.length} PBI(s) need additional context before proceeding`;
+
+      // Initialize context responses
+      contextResponses = {};
+      requests.forEach(r => {
+        contextResponses[r.candidateId] = '';
+      });
+
+      // Render context request list
+      const list = document.getElementById('contextList');
+      list.innerHTML = requests.map(r => `
+        <div class="bg-gray-700 rounded-lg p-4" data-context-id="${r.candidateId}">
+          <div class="flex justify-between items-start mb-2">
+            <div>
+              <span class="font-mono text-indigo-400">${r.candidateId}</span>
+              <span class="ml-2 text-gray-300">${r.title}</span>
+            </div>
+            <span class="text-red-400 font-bold">${r.score}/100</span>
+          </div>
+          ${r.missingElements?.length ? `
+            <div class="mb-2">
+              <span class="text-xs text-orange-400">Missing Elements:</span>
+              <ul class="text-sm text-gray-300 list-disc list-inside">
+                ${r.missingElements.map(m => `<li>${m}</li>`).join('')}
+              </ul>
+            </div>
+          ` : ''}
+          ${r.specificQuestions?.length ? `
+            <div class="mb-3">
+              <span class="text-xs text-blue-400">Questions to Address:</span>
+              <ul class="text-sm text-gray-300 list-decimal list-inside">
+                ${r.specificQuestions.map(q => `<li>${q}</li>`).join('')}
+              </ul>
+            </div>
+          ` : ''}
+          <div>
+            <label class="text-sm text-gray-400 block mb-1">Provide additional context:</label>
+            <textarea class="context-input w-full bg-gray-600 border border-gray-500 rounded p-2 text-gray-200 text-sm"
+                      data-id="${r.candidateId}" rows="3"
+                      placeholder="Enter context or type 'skip' to reject this PBI..."></textarea>
+          </div>
+        </div>
+      `).join('');
+
+      // Add event listeners for text inputs
+      list.querySelectorAll('.context-input').forEach(input => {
+        input.addEventListener('input', (e) => {
+          contextResponses[e.target.dataset.id] = e.target.value;
+        });
+      });
+
+      document.getElementById('contextPanel').classList.remove('hidden');
+    }
+
+    // Submit approval decisions
+    async function submitApprovals() {
+      // Check all decisions are made
+      const undecided = Object.entries(approvalDecisions).filter(([_, v]) => v === null);
+      if (undecided.length > 0) {
+        showToast(`Please make a decision for all ${undecided.length} pending PBI(s)`, 'warning');
+        return;
+      }
+
+      // Count decisions
+      const approved = Object.values(approvalDecisions).filter(v => v === 'approve').length;
+      const rejected = Object.values(approvalDecisions).filter(v => v === 'reject').length;
+
+      try {
+        showToast('Submitting decisions...', 'info');
+
+        const res = await fetch(`/api/threads/${currentData.threadId}/approve`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ decisions: approvalDecisions }),
+        });
+
+        const data = await res.json();
+
+        if (data.success) {
+          // Hide approval panel immediately
+          document.getElementById('approvalPanel').classList.add('hidden');
+          document.getElementById('approvalDetails').classList.add('hidden');
+
+          showToast(`Decisions submitted: ${approved} approved, ${rejected} rejected`, 'success');
+
+          // Reload thread data (this also checks for interrupts)
+          await loadThread(currentData.threadId);
+
+          if (data.status === 'completed') {
+            showCompletionMessage(data.summary);
+          }
+        } else {
+          showToast('Failed to submit approvals: ' + (data.error || 'Unknown error'), 'error');
+        }
+      } catch (error) {
+        console.error('Failed to submit approvals:', error);
+        showToast('Failed to submit approvals', 'error');
+      }
+    }
+
+    // Submit context responses
+    async function submitContext() {
+      // Convert skip to empty string
+      const contexts = {};
+      Object.entries(contextResponses).forEach(([id, value]) => {
+        contexts[id] = (value || '').toLowerCase() === 'skip' ? '' : value;
+      });
+
+      // Count provided vs skipped
+      const provided = Object.values(contexts).filter(v => v && v.length > 0).length;
+      const skipped = Object.values(contexts).filter(v => !v || v.length === 0).length;
+
+      try {
+        showToast('Submitting context...', 'info');
+
+        const res = await fetch(`/api/threads/${currentData.threadId}/context`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ contexts }),
+        });
+
+        const data = await res.json();
+
+        if (data.success) {
+          // Hide context panel immediately
+          document.getElementById('contextPanel').classList.add('hidden');
+          document.getElementById('contextDetails').classList.add('hidden');
+
+          showToast(`Context submitted: ${provided} provided, ${skipped} skipped`, 'success');
+
+          // Reload thread data (this also checks for interrupts)
+          await loadThread(currentData.threadId);
+
+          if (data.status === 'completed') {
+            showCompletionMessage(data.summary);
+          }
+        } else {
+          showToast('Failed to submit context: ' + (data.error || 'Unknown error'), 'error');
+        }
+      } catch (error) {
+        console.error('Failed to submit context:', error);
+        showToast('Failed to submit context', 'error');
+      }
+    }
+
+    // Show completion message
+    function showCompletionMessage(summary) {
+      showToast(`Pipeline completed! ${summary.exported} PBI(s) exported`, 'success');
+      stopPolling(); // Stop polling when complete
+    }
+
+    // Approve all
+    function approveAll() {
+      pendingApprovals.forEach(c => {
+        setApprovalDecision(c.candidateId, 'approve');
+      });
+    }
+
+    // Reject all
+    function rejectAll() {
+      pendingApprovals.forEach(c => {
+        setApprovalDecision(c.candidateId, 'reject');
+      });
+    }
+
+    // Setup approval panel event listeners
+    function setupApprovalPanel() {
+      document.getElementById('toggleApprovalDetails').addEventListener('click', () => {
+        const details = document.getElementById('approvalDetails');
+        const btn = document.getElementById('toggleApprovalDetails');
+        details.classList.toggle('hidden');
+        btn.textContent = details.classList.contains('hidden') ? 'Show Details' : 'Hide Details';
+      });
+
+      document.getElementById('toggleContextDetails').addEventListener('click', () => {
+        const details = document.getElementById('contextDetails');
+        const btn = document.getElementById('toggleContextDetails');
+        details.classList.toggle('hidden');
+        btn.textContent = details.classList.contains('hidden') ? 'Show Details' : 'Hide Details';
+      });
+
+      document.getElementById('approveAllBtn').addEventListener('click', approveAll);
+      document.getElementById('rejectAllBtn').addEventListener('click', rejectAll);
+      document.getElementById('submitApprovalsBtn').addEventListener('click', submitApprovals);
+      document.getElementById('submitContextBtn').addEventListener('click', submitContext);
+    }
+
+    // Start
+    init();
+    setupApprovalPanel();
+  </script>
+</body>
+</html>

@@ -1,0 +1,45 @@
+Meeting Notes: Chef I/O Configuration Feature Discussion
+Date: 2024-12-22
+Attendees: Product Team
+
+---
+
+DISCUSSION SUMMARY:
+
+We need to define where Chef reads input from and where it writes output to. Currently everything is hardcoded - input is a single text file, output goes to ./docs/output/. This limits adoption and flexibility.
+
+KEY DECISIONS:
+
+1. INPUT SOURCES - Where meeting notes come from:
+   - Local files (.txt, .md, .docx)
+   - Directory scanning (process all files in a folder)
+   - Clipboard/stdin (pipe content directly)
+   - URLs (fetch from web/wiki)
+   - Future: Confluence, Notion, Google Docs APIs
+
+2. OUTPUT DESTINATIONS - Where PBIs are exported:
+   - Local markdown files (current behavior)
+   - JSON files (for tooling integration)
+   - YAML files (for GitOps workflows)
+   - stdout (for piping to other tools)
+   - Future: Jira, Azure DevOps, GitHub Issues, Linear
+
+3. CONFIGURATION APPROACH:
+   - CLI flags for one-off overrides
+   - Config file (.chefrc.yaml or chef.config.yaml) for project defaults
+   - Environment variables for CI/CD pipelines
+
+ACTION ITEMS:
+
+- Create InputConfig and OutputConfig types in @chef/core
+- Add --input-format and --output-dir flags to CLI
+- Support config file loading with sensible defaults
+- Document supported formats and destinations
+
+RISKS IDENTIFIED:
+
+- Scope creep with too many integrations
+- Breaking changes to existing CLI interface
+- Authentication complexity for external services
+
+PRIORITY: High - this is foundational for adoption

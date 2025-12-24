@@ -7,12 +7,12 @@
 
 import { StateGraph, START, END } from "@langchain/langgraph";
 import { SqliteSaver } from "@langchain/langgraph-checkpoint-sqlite";
-import { MemorySaver } from "@langchain/langgraph-checkpoint";
 
 import { PipelineState } from "../state/index.js";
 import {
   detectEventNode,
   extractCandidatesNode,
+  dependencyMappingNode,
   scoreConfidenceNode,
   routeByScoreNode,
   routeDecision,
@@ -33,7 +33,7 @@ export interface HITLGraphOptions {
    * Path to SQLite file for persistence.
    * Required for HITL to work (state must survive interrupts).
    */
-  checkpointPath?: string;
+  checkpointPath: string;
 }
 
 /**
@@ -41,12 +41,12 @@ export interface HITLGraphOptions {
  *
  * Flow:
  * ```
- * START → detectEvent → extractCandidates → scoreConfidence → routeByScore
- *                                                                    │
- *                    ┌───────────────────────────────────────────────┤
- *                    │                                               │
- *                    ▼                                               ▼
- *               (enrich) ←──── humanApproval ←──── (interrupt) ←── (approve)
+ * START → detectEvent → extractCandidates → dependencyMapping → scoreConfidence → routeByScore
+ *                                                                                      │
+ *                    ┌─────────────────────────────────────────────────────────────────┤
+ *                    │                                                                 │
+ *                    ▼                                                                 ▼
+ *               (enrich) ←──── humanApproval ←──── (interrupt) ←────────────────── (approve)
  *                    │              │
  *                    │              ▼
  *                    │        requestContext
@@ -90,17 +90,15 @@ export interface HITLGraphOptions {
  * }
  * ```
  */
-export function createPipelineGraphWithHITL(options: HITLGraphOptions = {}) {
-  // Checkpointer is required for HITL (state must persist across interrupts)
-  const checkpointer = options.checkpointPath
-    ? SqliteSaver.fromConnString(options.checkpointPath)
-    : new MemorySaver();
+export function createPipelineGraphWithHITL(options: HITLGraphOptions) {
+  const checkpointer = SqliteSaver.fromConnString(options.checkpointPath);
 
   // Build the graph with conditional routing
   const builder = new StateGraph(PipelineState)
-    // Core pipeline nodes (Steps 1-3)
+    // Core pipeline nodes (EventDetection → CandidateExtraction → DependencyMapping → ConfidenceScoring)
     .addNode("detectEvent", detectEventNode)
     .addNode("extractCandidates", extractCandidatesNode)
+    .addNode("dependencyMapping", dependencyMappingNode)
     .addNode("scoreConfidence", scoreConfidenceNode)
 
     // HITL routing nodes
@@ -115,22 +113,23 @@ export function createPipelineGraphWithHITL(options: HITLGraphOptions = {}) {
     })
     .addNode("rescoreWithContext", rescoreWithContextNode)
 
-    // Step 4: Enrichment (placeholder)
+    // ContextEnrichment phase
     .addNode("enrichContext", enrichContextNode)
 
-    // Step 4.5: Consolidate Description
+    // ConsolidateDescription phase
     .addNode("consolidateDescription", consolidateDescriptionNode)
 
-    // Step 5: Risk Analysis
+    // RiskAnalysis phase
     .addNode("riskAnalysis", riskAnalysisNode)
 
-    // Step 6: Export PBIs
+    // Export phase
     .addNode("exportPBI", exportPBINode)
 
     // Linear edges for core pipeline
     .addEdge(START, "detectEvent")
     .addEdge("detectEvent", "extractCandidates")
-    .addEdge("extractCandidates", "scoreConfidence")
+    .addEdge("extractCandidates", "dependencyMapping")
+    .addEdge("dependencyMapping", "scoreConfidence")
     .addEdge("scoreConfidence", "routeByScore")
 
     // Conditional routing from routeByScore

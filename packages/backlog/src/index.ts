@@ -16,3 +16,6 @@ export * from "./prompts/index.js";
 
 // Constants
 export * from "./constants/index.js";
+
+// HITL Session Management
+export * from "./hitl/index.js";

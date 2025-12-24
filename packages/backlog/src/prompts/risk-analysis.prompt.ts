@@ -1,5 +1,5 @@
 /**
- * Prompt template for Step 5: Risk Analysis
+ * Prompt template for RiskAnalysis phase
  *
  * Analyzes risks in approved PBIs based on consolidated description
  */

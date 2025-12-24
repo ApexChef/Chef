@@ -1,5 +1,5 @@
 /**
- * Risk Analysis Node (Step 5)
+ * RiskAnalysis Node
  *
  * Analyzes risks for approved PBIs using their consolidated descriptions.
  * Considers both LLM-extracted content and human-provided context.
@@ -7,9 +7,9 @@
 
 import type { BaseChatModel } from "@langchain/core/language_models/chat_models";
 import type { PipelineStateType } from "../../state/index.js";
-import { PBIRiskAnalysisSchema, type PBIRiskAnalysis } from "../../schemas/index.js";
-import { riskAnalysisPrompt } from "../../prompts/index.js";
-import { LLMRouter } from "../../../llm/index.js";
+import { PBIRiskAnalysisSchema, type PBIRiskAnalysis } from "../../../schemas/index.js";
+import { riskAnalysisPrompt } from "../../../prompts/index.js";
+import { LLMRouter, getContextLogger, runStep } from "@chef/core";
 
 /**
  * Analyze risks for approved PBIs
@@ -22,30 +22,33 @@ import { LLMRouter } from "../../../llm/index.js";
 export async function riskAnalysisNode(
   state: PipelineStateType
 ): Promise<Partial<PipelineStateType>> {
-  const startTime = Date.now();
-  const router = new LLMRouter();
+  return runStep('riskAnalysis', async () => {
+    const logger = getContextLogger();
+    const startTime = Date.now();
+    const router = new LLMRouter();
 
-  console.log("[Graph] Running riskAnalysis node...");
+    // Get approved PBIs that haven't been analyzed yet
+    const approvedIds = state.approvedForEnrichment;
+    const analyzedIds = state.riskAnalyses.map((r) => r.candidateId);
+    const toAnalyze = approvedIds.filter((id) => !analyzedIds.includes(id));
 
-  // Get approved PBIs that haven't been analyzed yet
-  const approvedIds = state.approvedForEnrichment;
-  const analyzedIds = state.riskAnalyses.map((r) => r.candidateId);
-  const toAnalyze = approvedIds.filter((id) => !analyzedIds.includes(id));
-
-  if (toAnalyze.length === 0) {
-    console.log("[Graph] riskAnalysis: No new PBIs to analyze");
-    return {
-      metadata: {
-        ...state.metadata,
-        stepTimings: {
-          ...state.metadata.stepTimings,
-          riskAnalysis: Date.now() - startTime,
+    if (toAnalyze.length === 0) {
+      logger.info('No new PBIs to analyze');
+      return {
+        metadata: {
+          ...state.metadata,
+          stepTimings: {
+            ...state.metadata.stepTimings,
+            riskAnalysis: Date.now() - startTime,
+          },
         },
-      },
-    };
-  }
+      };
+    }
 
-  console.log(`[Graph] riskAnalysis: Analyzing ${toAnalyze.length} PBI(s)`);
+    logger.info({
+      pbiCount: toAnalyze.length,
+      pbiIds: toAnalyze
+    }, 'Starting risk analysis for approved PBIs');
 
   const model = router.getModel({ temperature: 0.2 }) as BaseChatModel;
   const structuredModel = model.withStructuredOutput(PBIRiskAnalysisSchema);
@@ -58,11 +61,11 @@ export async function riskAnalysisNode(
     const scored = state.scoredCandidates.find((s) => s.candidateId === candidateId);
 
     if (!candidate) {
-      console.warn(`[Step 5] Candidate ${candidateId} not found, skipping`);
+      logger.warn({ candidateId }, 'Candidate not found, skipping risk analysis');
       continue;
     }
 
-    console.log(`[Step 5] Analyzing risks for ${candidateId}...`);
+    logger.debug({ candidateId, title: candidate.title }, 'Analyzing risks for candidate');
 
     try {
       const result = await chain.invoke({
@@ -76,13 +79,22 @@ export async function riskAnalysisNode(
         recommendations: scored?.recommendations?.join("\n- ") || "None",
       });
 
-      newAnalyses.push(result as PBIRiskAnalysis);
+      // Ensure candidateId is always set correctly (don't rely on LLM echo)
+      newAnalyses.push({
+        ...result,
+        candidateId,
+      } as PBIRiskAnalysis);
 
-      console.log(
-        `[Step 5]   ${candidateId}: ${result.overallRiskLevel} risk, ${result.risks.length} risk(s) identified`
-      );
+      logger.info({
+        candidateId,
+        riskLevel: result.overallRiskLevel,
+        risksCount: result.risks.length
+      }, 'Risk analysis completed for candidate');
     } catch (error) {
-      console.error(`[Step 5]   ${candidateId}: Risk analysis failed`, error);
+      logger.error({
+        candidateId,
+        err: error
+      }, 'Risk analysis failed for candidate');
       // Create a minimal fallback analysis
       newAnalyses.push({
         candidateId,
@@ -103,17 +115,22 @@ export async function riskAnalysisNode(
     }
   }
 
-  const elapsed = Date.now() - startTime;
-  console.log(`[Graph] riskAnalysis complete: ${newAnalyses.length} analyzed (${elapsed}ms)`);
+    const elapsed = Date.now() - startTime;
 
-  return {
-    riskAnalyses: newAnalyses,
-    metadata: {
-      ...state.metadata,
-      stepTimings: {
-        ...state.metadata.stepTimings,
-        riskAnalysis: elapsed,
+    logger.info({
+      analyzedCount: newAnalyses.length,
+      duration: elapsed
+    }, 'Risk analysis completed');
+
+    return {
+      riskAnalyses: newAnalyses,
+      metadata: {
+        ...state.metadata,
+        stepTimings: {
+          ...state.metadata.stepTimings,
+          riskAnalysis: elapsed,
+        },
       },
-    },
-  };
+    };
+  });
 }

@@ -12,7 +12,7 @@ import {
   SCORE_THRESHOLDS,
   getScoreCategory,
   type HITLStatus,
-} from "../../constants/index.js";
+} from "../../../constants/index.js";
 
 /**
  * Route PBIs by their confidence scores

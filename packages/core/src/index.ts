@@ -12,11 +12,31 @@ export type { LLMConfig, LLMProvider } from "./llm/types.js";
 export { DEFAULT_CONFIG, DEFAULT_MODELS } from "./llm/types.js";
 
 // RAG Framework
-export { ChefRetriever } from "./rag/retriever.js";
+export { RAGRetriever, getRAGRetriever, type RAGRetrieverConfig, type RAGResult } from "./rag/index.js";
 
-// Logging
-export { createLogger } from "./logging/index.js";
-export type { Logger, LogLevel, LogEntry } from "./logging/index.js";
+// Logging (New Pino-based logger)
+export {
+  getLogger,
+  createLogger,
+  resetLogger,
+  getContext,
+  getContextLogger,
+  runPipeline,
+  runStep,
+  runWithContext
+} from "./logger/index.js";
+export type {
+  Logger,
+  LoggerConfig,
+  PipelineContext,
+  RotationConfig,
+  LogLevel as LoggerLevel
+} from "./logger/index.js";
+export { LogLevels } from "./logger/index.js";
+
+// Legacy Logging (Deprecated - for backward compatibility)
+export { createLogger as createLegacyLogger } from "./logging/index.js";
+export type { Logger as LegacyLogger, LogLevel, LogEntry } from "./logging/index.js";
 
 // Configuration
 export { loadConfig, loadBaseConfig, BaseConfigSchema } from "./config/index.js";

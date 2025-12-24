@@ -1,0 +1,869 @@
+{
+  "threadId": "cli-1766413382001",
+  "metadata": {
+    "source": "loop",
+    "writes": {
+      "routeByScore": {
+        "pbiStatuses": [
+          {
+            "candidateId": "PBI-001",
+            "score": 77.5,
+            "status": "auto_approved",
+            "rescoreCount": 0,
+            "contextRequests": {
+              "lc": 2,
+              "type": "undefined"
+            },
+            "humanContext": {
+              "lc": 2,
+              "type": "undefined"
+            },
+            "humanDecision": {
+              "lc": 2,
+              "type": "undefined"
+            }
+          },
+          {
+            "candidateId": "PBI-002",
+            "score": 77.5,
+            "status": "auto_approved",
+            "rescoreCount": 0,
+            "contextRequests": {
+              "lc": 2,
+              "type": "undefined"
+            },
+            "humanContext": {
+              "lc": 2,
+              "type": "undefined"
+            },
+            "humanDecision": {
+              "lc": 2,
+              "type": "undefined"
+            }
+          },
+          {
+            "candidateId": "PBI-003",
+            "score": 66,
+            "status": "awaiting_approval",
+            "rescoreCount": 0,
+            "contextRequests": {
+              "lc": 2,
+              "type": "undefined"
+            },
+            "humanContext": {
+              "lc": 2,
+              "type": "undefined"
+            },
+            "humanDecision": {
+              "lc": 2,
+              "type": "undefined"
+            }
+          },
+          {
+            "candidateId": "PBI-004",
+            "score": 83,
+            "status": "auto_approved",
+            "rescoreCount": 0,
+            "contextRequests": {
+              "lc": 2,
+              "type": "undefined"
+            },
+            "humanContext": {
+              "lc": 2,
+              "type": "undefined"
+            },
+            "humanDecision": {
+              "lc": 2,
+              "type": "undefined"
+            }
+          },
+          {
+            "candidateId": "PBI-005",
+            "score": 77.5,
+            "status": "auto_approved",
+            "rescoreCount": 0,
+            "contextRequests": {
+              "lc": 2,
+              "type": "undefined"
+            },
+            "humanContext": {
+              "lc": 2,
+              "type": "undefined"
+            },
+            "humanDecision": {
+              "lc": 2,
+              "type": "undefined"
+            }
+          },
+          {
+            "candidateId": "PBI-006",
+            "score": 77.5,
+            "status": "auto_approved",
+            "rescoreCount": 0,
+            "contextRequests": {
+              "lc": 2,
+              "type": "undefined"
+            },
+            "humanContext": {
+              "lc": 2,
+              "type": "undefined"
+            },
+            "humanDecision": {
+              "lc": 2,
+              "type": "undefined"
+            }
+          },
+          {
+            "candidateId": "PBI-007",
+            "score": 82.5,
+            "status": "auto_approved",
+            "rescoreCount": 0,
+            "contextRequests": {
+              "lc": 2,
+              "type": "undefined"
+            },
+            "humanContext": {
+              "lc": 2,
+              "type": "undefined"
+            },
+            "humanDecision": {
+              "lc": 2,
+              "type": "undefined"
+            }
+          }
+        ],
+        "approvedForEnrichment": [
+          "PBI-001",
+          "PBI-002",
+          "PBI-004",
+          "PBI-005",
+          "PBI-006",
+          "PBI-007"
+        ],
+        "pendingInterrupt": {
+          "type": "approval",
+          "candidateIds": [
+            "PBI-003"
+          ],
+          "message": "1 PBI(s) need your approval (score 50-74)"
+        }
+      }
+    },
+    "step": 5,
+    "parents": {}
+  },
+  "currentPhase": [
+    {
+      "id": "eventDetection",
+      "name": "Event Detection",
+      "short": "Event",
+      "status": "completed"
+    },
+    {
+      "id": "candidateExtraction",
+      "name": "Candidate Extraction",
+      "short": "Extract",
+      "status": "completed"
+    },
+    {
+      "id": "dependencyMapping",
+      "name": "Dependency Mapping",
+      "short": "Deps",
+      "status": "completed"
+    },
+    {
+      "id": "confidenceScoring",
+      "name": "Confidence Scoring",
+      "short": "Score",
+      "status": "completed"
+    },
+    {
+      "id": "humanApproval",
+      "name": "Human Approval",
+      "short": "HITL",
+      "status": "active"
+    },
+    {
+      "id": "contextEnrichment",
+      "name": "Context Enrichment",
+      "short": "Enrich",
+      "status": "pending"
+    },
+    {
+      "id": "consolidateDescription",
+      "name": "Consolidate Description",
+      "short": "Consolidate",
+      "status": "completed"
+    },
+    {
+      "id": "riskAnalysis",
+      "name": "Risk Analysis",
+      "short": "Risk",
+      "status": "active"
+    },
+    {
+      "id": "exportPBI",
+      "name": "Export PBI",
+      "short": "Export",
+      "status": "pending"
+    }
+  ],
+  "state": {
+    "meetingNotes": "Meeting Notes: Chef I/O Configuration Feature Discussion\nDate: 2024-12-22\nAttendees: Product Team\n\n---\n\nDISCUSSION SUMMARY:\n\nWe need to define where Chef reads input from and where it writes output to. Currently everything is hardcoded - input is a single text file, output goes to ./docs/output/. This limits adoption and flexibility.\n\nKEY DECISIONS:\n\n1. INPUT SOURCES - Where meeting notes come from:\n   - Local files (.txt, .md, .docx)\n   - Directory scanning (process all files in a folder)\n   - Clipboard/stdin (pipe content directly)\n   - URLs (fetch from web/wiki)\n   - Future: Confluence, Notion, Google Docs APIs\n\n2. OUTPUT DESTINATIONS - Where PBIs are exported:\n   - Local markdown files (current behavior)\n   - JSON files (for tooling integration)\n   - YAML files (for GitOps workflows)\n   - stdout (for piping to other tools)\n   - Future: Jira, Azure DevOps, GitHub Issues, Linear\n\n3. CONFIGURATION APPROACH:\n   - CLI flags for one-off overrides\n   - Config file (.chefrc.yaml or chef.config.yaml) for project defaults\n   - Environment variables for CI/CD pipelines\n\nACTION ITEMS:\n\n- Create InputConfig and OutputConfig types in @chef/core\n- Add --input-format and --output-dir flags to CLI\n- Support config file loading with sensible defaults\n- Document supported formats and destinations\n\nRISKS IDENTIFIED:\n\n- Scope creep with too many integrations\n- Breaking changes to existing CLI interface\n- Authentication complexity for external services\n\nPRIORITY: High - this is foundational for adoption\n",
+    "eventType": "refinement",
+    "eventConfidence": 0.9,
+    "eventIndicators": [
+      "Defining feature requirements and specifications",
+      "Breaking down work into technical components (InputConfig, OutputConfig types)",
+      "Discussing acceptance criteria for input/output sources",
+      "Identifying scope and technical implementation details",
+      "Creating action items for development work",
+      "Risk assessment and priority setting",
+      "Feature design discussion rather than sprint planning or progress updates"
+    ],
+    "candidates": [
+      {
+        "id": "PBI-001",
+        "title": "As a Chef user, I want to configure input sources so that I can process meeting notes from various formats and locations",
+        "type": "feature",
+        "rawContext": "We need to define where Chef reads input from and where it writes output to. Currently everything is hardcoded - input is a single text file, output goes to ./docs/output/. This limits adoption and flexibility. INPUT SOURCES - Where meeting notes come from: Local files (.txt, .md, .docx), Directory scanning (process all files in a folder), Clipboard/stdin (pipe content directly), URLs (fetch from web/wiki)",
+        "extractedDescription": "Implement configurable input sources for Chef to read meeting notes from multiple formats and locations including local files (.txt, .md, .docx), directory scanning, clipboard/stdin, and URLs. This will replace the current hardcoded single text file input limitation.",
+        "sequence": 2,
+        "canParallelize": false,
+        "humanContext": {
+          "lc": 2,
+          "type": "undefined"
+        },
+        "consolidatedDescription": {
+          "lc": 2,
+          "type": "undefined"
+        }
+      },
+      {
+        "id": "PBI-002",
+        "title": "As a Chef user, I want to configure output destinations so that I can export PBIs to different formats and locations",
+        "type": "feature",
+        "rawContext": "OUTPUT DESTINATIONS - Where PBIs are exported: Local markdown files (current behavior), JSON files (for tooling integration), YAML files (for GitOps workflows), stdout (for piping to other tools)",
+        "extractedDescription": "Implement configurable output destinations for Chef to export PBIs to multiple formats including local markdown files, JSON files for tooling integration, YAML files for GitOps workflows, and stdout for piping to other tools. This will replace the current hardcoded ./docs/output/ limitation.",
+        "sequence": 2,
+        "canParallelize": false,
+        "humanContext": {
+          "lc": 2,
+          "type": "undefined"
+        },
+        "consolidatedDescription": {
+          "lc": 2,
+          "type": "undefined"
+        }
+      },
+      {
+        "id": "PBI-003",
+        "title": "Create InputConfig and OutputConfig types in @chef/core",
+        "type": "tech-debt",
+        "rawContext": "Create InputConfig and OutputConfig types in @chef/core",
+        "extractedDescription": "Define TypeScript types for InputConfig and OutputConfig in the @chef/core package to support the new configurable I/O system. These types will provide structure for input source and output destination configurations.",
+        "sequence": 1,
+        "canParallelize": true,
+        "humanContext": {
+          "lc": 2,
+          "type": "undefined"
+        },
+        "consolidatedDescription": {
+          "lc": 2,
+          "type": "undefined"
+        }
+      },
+      {
+        "id": "PBI-004",
+        "title": "Add CLI flags for input format and output directory configuration",
+        "type": "feature",
+        "rawContext": "Add --input-format and --output-dir flags to CLI",
+        "extractedDescription": "Implement CLI flags --input-format and --output-dir to allow users to override input and output configurations from the command line for one-off usage scenarios.",
+        "sequence": 3,
+        "canParallelize": false,
+        "humanContext": {
+          "lc": 2,
+          "type": "undefined"
+        },
+        "consolidatedDescription": {
+          "lc": 2,
+          "type": "undefined"
+        }
+      },
+      {
+        "id": "PBI-005",
+        "title": "As a Chef user, I want config file support so that I can set project defaults without CLI flags",
+        "type": "feature",
+        "rawContext": "Support config file loading with sensible defaults. Config file (.chefrc.yaml or chef.config.yaml) for project defaults",
+        "extractedDescription": "Implement configuration file support using .chefrc.yaml or chef.config.yaml files to allow users to set project-level defaults for input and output configurations, reducing the need for repetitive CLI flags.",
+        "sequence": 3,
+        "canParallelize": false,
+        "humanContext": {
+          "lc": 2,
+          "type": "undefined"
+        },
+        "consolidatedDescription": {
+          "lc": 2,
+          "type": "undefined"
+        }
+      },
+      {
+        "id": "PBI-006",
+        "title": "As a Chef user, I want environment variable support so that I can configure Chef in CI/CD pipelines",
+        "type": "feature",
+        "rawContext": "Environment variables for CI/CD pipelines",
+        "extractedDescription": "Implement environment variable support for Chef configuration to enable seamless integration with CI/CD pipelines and automated workflows where config files or CLI flags may not be practical.",
+        "sequence": 3,
+        "canParallelize": false,
+        "humanContext": {
+          "lc": 2,
+          "type": "undefined"
+        },
+        "consolidatedDescription": {
+          "lc": 2,
+          "type": "undefined"
+        }
+      },
+      {
+        "id": "PBI-007",
+        "title": "Document supported input formats and output destinations",
+        "type": "feature",
+        "rawContext": "Document supported formats and destinations",
+        "extractedDescription": "Create comprehensive documentation covering all supported input formats (.txt, .md, .docx, directory scanning, clipboard/stdin, URLs) and output destinations (markdown, JSON, YAML, stdout) including usage examples and configuration options.",
+        "sequence": 4,
+        "canParallelize": false,
+        "humanContext": {
+          "lc": 2,
+          "type": "undefined"
+        },
+        "consolidatedDescription": {
+          "lc": 2,
+          "type": "undefined"
+        }
+      }
+    ],
+    "dependencies": [
+      {
+        "source": "PBI-001",
+        "target": "PBI-003",
+        "type": "blocks",
+        "reason": "Input source configuration needs the InputConfig type definition to be implemented",
+        "strength": "hard"
+      },
+      {
+        "source": "PBI-002",
+        "target": "PBI-003",
+        "type": "blocks",
+        "reason": "Output destination configuration needs the OutputConfig type definition to be implemented",
+        "strength": "hard"
+      },
+      {
+        "source": "PBI-004",
+        "target": "PBI-001",
+        "type": "blocks",
+        "reason": "CLI flags for input format require the input source configuration system to exist",
+        "strength": "hard"
+      },
+      {
+        "source": "PBI-004",
+        "target": "PBI-002",
+        "type": "blocks",
+        "reason": "CLI flags for output directory require the output destination configuration system to exist",
+        "strength": "hard"
+      },
+      {
+        "source": "PBI-005",
+        "target": "PBI-001",
+        "type": "blocks",
+        "reason": "Config file support needs the input configuration system to be in place",
+        "strength": "hard"
+      },
+      {
+        "source": "PBI-005",
+        "target": "PBI-002",
+        "type": "blocks",
+        "reason": "Config file support needs the output configuration system to be in place",
+        "strength": "hard"
+      },
+      {
+        "source": "PBI-006",
+        "target": "PBI-001",
+        "type": "blocks",
+        "reason": "Environment variable support needs the input configuration system to be in place",
+        "strength": "hard"
+      },
+      {
+        "source": "PBI-006",
+        "target": "PBI-002",
+        "type": "blocks",
+        "reason": "Environment variable support needs the output configuration system to be in place",
+        "strength": "hard"
+      },
+      {
+        "source": "PBI-007",
+        "target": "PBI-001",
+        "type": "blocks",
+        "reason": "Documentation requires the input formats to be implemented first",
+        "strength": "soft"
+      },
+      {
+        "source": "PBI-007",
+        "target": "PBI-002",
+        "type": "blocks",
+        "reason": "Documentation requires the output destinations to be implemented first",
+        "strength": "soft"
+      },
+      {
+        "source": "PBI-004",
+        "target": "PBI-005",
+        "type": "relates-to",
+        "reason": "Both are configuration mechanisms that should work together harmoniously",
+        "strength": "soft"
+      },
+      {
+        "source": "PBI-005",
+        "target": "PBI-006",
+        "type": "relates-to",
+        "reason": "Both are configuration mechanisms that should work together harmoniously",
+        "strength": "soft"
+      },
+      {
+        "source": "PBI-004",
+        "target": "PBI-006",
+        "type": "relates-to",
+        "reason": "Both are configuration mechanisms that should work together harmoniously",
+        "strength": "soft"
+      }
+    ],
+    "scoredCandidates": [
+      {
+        "candidateId": "PBI-001",
+        "scores": {
+          "completeness": 85,
+          "clarity": 80,
+          "actionability": 70,
+          "testability": 75
+        },
+        "overallScore": 77.5,
+        "missingElements": [
+          "Explicit acceptance criteria",
+          "Priority/effort estimation guidance",
+          "Error handling requirements for different input sources",
+          "Performance considerations for directory scanning"
+        ],
+        "strengths": [
+          "Clear user story format with role and goal",
+          "Comprehensive description of input source types",
+          "Good context about current limitations and why change is needed",
+          "Specific file formats listed (.txt, .md, .docx)",
+          "Well-defined scope replacing hardcoded single file input"
+        ],
+        "concerns": [
+          "No explicit acceptance criteria provided",
+          "Dependency on PBI-003 may block immediate work",
+          "URL fetching introduces external dependencies and potential security concerns",
+          "Directory scanning could have performance implications for large directories",
+          "No mention of validation or error handling for different input sources"
+        ],
+        "recommendations": [
+          "Add explicit acceptance criteria covering each input source type",
+          "Define error handling requirements for invalid files, network failures, and access permissions",
+          "Consider breaking into smaller PBIs: one for local files, another for URLs/network sources",
+          "Add validation requirements for supported file formats and sizes",
+          "Specify performance expectations for directory scanning operations",
+          "Include security considerations for URL fetching (allowlists, timeouts, etc.)"
+        ]
+      },
+      {
+        "candidateId": "PBI-002",
+        "scores": {
+          "completeness": 85,
+          "clarity": 80,
+          "actionability": 70,
+          "testability": 75
+        },
+        "overallScore": 77.5,
+        "missingElements": [
+          "Explicit acceptance criteria section",
+          "Error handling and validation requirements",
+          "Configuration file format/location specification",
+          "Backward compatibility considerations",
+          "Performance requirements for different output formats"
+        ],
+        "strengths": [
+          "Clear user story format with well-defined persona (Chef user)",
+          "Comprehensive description covering multiple output formats (markdown, JSON, YAML, stdout)",
+          "Good business context explaining the replacement of hardcoded limitation",
+          "Type is clearly identified as feature",
+          "Raw context provides helpful technical details about current vs desired behavior",
+          "Dependency relationship with PBI-003 is well-documented"
+        ],
+        "concerns": [
+          "Missing explicit acceptance criteria - relies on description for success definition",
+          "No mention of error handling or validation requirements",
+          "Scope could be large - implementing 4 different output formats in one PBI",
+          "No indication of priority or order for implementing different formats",
+          "Hard dependency on PBI-003 creates potential blocking risk"
+        ],
+        "recommendations": [
+          "Add explicit acceptance criteria covering each output format (markdown, JSON, YAML, stdout)",
+          "Consider breaking into smaller PBIs - one per output format for better sprint planning",
+          "Specify configuration mechanism (CLI flags, config file, environment variables)",
+          "Add acceptance criteria for error scenarios (invalid paths, permission issues)",
+          "Define backward compatibility requirements for existing ./docs/output/ behavior",
+          "Include examples of expected configuration syntax",
+          "Add performance criteria if relevant (e.g., large PBI exports)"
+        ]
+      },
+      {
+        "candidateId": "PBI-003",
+        "scores": {
+          "completeness": 65,
+          "clarity": 70,
+          "actionability": 75,
+          "testability": 55
+        },
+        "overallScore": 66,
+        "missingElements": [
+          "Specific acceptance criteria defining what properties/methods each type should have",
+          "Examples of what InputConfig and OutputConfig should look like",
+          "Dependencies or relationships to other components",
+          "Definition of what constitutes 'configurable I/O system'",
+          "Success metrics or validation criteria"
+        ],
+        "strengths": [
+          "Clear, descriptive title that explains exactly what needs to be created",
+          "Proper identification as tech-debt type",
+          "Specifies the target package (@chef/core)",
+          "Provides context about supporting a new system",
+          "Scope is well-bounded to creating two specific types",
+          "Actionable for a TypeScript developer"
+        ],
+        "concerns": [
+          "Lacks concrete acceptance criteria - unclear what properties/structure these types should have",
+          "No examples or specifications of the expected type definitions",
+          "Missing details about how these types will be used or consumed",
+          "Testability is limited without clear specifications",
+          "May require additional context about the 'configurable I/O system' to implement correctly"
+        ],
+        "recommendations": [
+          "Add specific acceptance criteria defining the required properties for each type (e.g., 'InputConfig must have source, format, validation properties')",
+          "Include example type definitions or at least property lists",
+          "Specify how these types will be exported and consumed by other packages",
+          "Add validation requirements (should types include runtime validation?)",
+          "Consider adding a reference to design documents or related PBIs for the 'configurable I/O system'",
+          "Define what testing approach should be used (unit tests for type validation, integration tests, etc.)"
+        ]
+      },
+      {
+        "candidateId": "PBI-004",
+        "scores": {
+          "completeness": 85,
+          "clarity": 90,
+          "actionability": 75,
+          "testability": 80
+        },
+        "overallScore": 83,
+        "missingElements": [
+          "Explicit acceptance criteria (though implied)",
+          "Error handling specifications for invalid inputs",
+          "Integration details with existing config system"
+        ],
+        "strengths": [
+          "Clear, descriptive title that explains exactly what will be implemented",
+          "Well-defined scope with specific flag names (--input-format, --output-dir)",
+          "Good context provided about one-off usage scenarios",
+          "Type clearly identified as feature",
+          "Strong dependency mapping shows understanding of system architecture",
+          "Focused on specific CLI interface enhancement"
+        ],
+        "concerns": [
+          "Depends on two blocking PBIs that must be completed first",
+          "No explicit acceptance criteria provided",
+          "Missing error handling specifications",
+          "No mention of help text or flag validation"
+        ],
+        "recommendations": [
+          "Add explicit acceptance criteria covering flag parsing, validation, and integration",
+          "Specify error handling for invalid input formats or non-existent directories",
+          "Include help text requirements for the new flags",
+          "Consider adding examples of expected flag usage",
+          "Ensure coordination with PBI-001 and PBI-002 teams for integration points"
+        ]
+      },
+      {
+        "candidateId": "PBI-005",
+        "scores": {
+          "completeness": 85,
+          "clarity": 80,
+          "actionability": 75,
+          "testability": 70
+        },
+        "overallScore": 77.5,
+        "missingElements": [
+          "Explicit acceptance criteria section",
+          "Config file precedence rules",
+          "Error handling specifications",
+          "Config file discovery mechanism",
+          "Basic schema or example structure"
+        ],
+        "strengths": [
+          "Clear user story format with well-defined persona and motivation",
+          "Specific file naming conventions provided (.chefrc.yaml or chef.config.yaml)",
+          "Good context about reducing CLI flag repetition",
+          "Type clearly identified as feature",
+          "Dependencies properly documented with blocking relationships",
+          "Scope is well-bounded to configuration file support only"
+        ],
+        "concerns": [
+          "No explicit acceptance criteria provided",
+          "File precedence order not specified when multiple config files exist",
+          "No mention of config validation or error handling",
+          "Missing details about config file schema or structure",
+          "No consideration of config file location discovery (project root, home directory, etc.)"
+        ],
+        "recommendations": [
+          "Add explicit acceptance criteria covering file discovery, loading, and precedence",
+          "Specify config file search order (e.g., project root first, then home directory)",
+          "Define basic config file structure or provide example snippet",
+          "Include error handling requirements for malformed or missing config files",
+          "Consider adding validation requirements for config file contents",
+          "Specify behavior when both .chefrc.yaml and chef.config.yaml exist"
+        ]
+      },
+      {
+        "candidateId": "PBI-006",
+        "scores": {
+          "completeness": 85,
+          "clarity": 80,
+          "actionability": 70,
+          "testability": 75
+        },
+        "overallScore": 77.5,
+        "missingElements": [
+          "Explicit acceptance criteria",
+          "Specific environment variables to implement",
+          "Priority/precedence rules for configuration sources",
+          "Error handling requirements for invalid environment variables"
+        ],
+        "strengths": [
+          "Clear user story format with well-defined persona",
+          "Strong business justification for CI/CD integration",
+          "Good type identification as feature",
+          "Clear scope bounded to environment variable support",
+          "Dependencies properly identified and don't create gaps"
+        ],
+        "concerns": [
+          "No explicit acceptance criteria provided",
+          "Lacks specificity about which configuration aspects support env vars",
+          "Missing configuration precedence rules (env vars vs config files vs CLI)",
+          "No mention of validation or error handling for environment variables"
+        ],
+        "recommendations": [
+          "Add explicit acceptance criteria covering key environment variables needed",
+          "Specify which configuration aspects will support environment variables",
+          "Define precedence rules: environment variables vs config files vs CLI flags",
+          "Include validation requirements for environment variable values",
+          "Add examples of expected environment variable names and formats",
+          "Consider adding error handling requirements for invalid/missing env vars"
+        ]
+      },
+      {
+        "candidateId": "PBI-007",
+        "scores": {
+          "completeness": 85,
+          "clarity": 90,
+          "actionability": 80,
+          "testability": 75
+        },
+        "overallScore": 82.5,
+        "missingElements": [
+          "Explicit acceptance criteria (though implied)",
+          "Priority or effort estimation guidance",
+          "Specific documentation structure/format requirements"
+        ],
+        "strengths": [
+          "Clear, descriptive title that explains the deliverable",
+          "Comprehensive description with specific technical details",
+          "Well-defined scope covering both input formats and output destinations",
+          "Good context awareness with sibling PBI dependencies",
+          "Specific format examples provided (.txt, .md, .docx, etc.)",
+          "Clear value proposition for users needing format guidance"
+        ],
+        "concerns": [
+          "Documentation quality and completeness will be subjective to evaluate",
+          "No clear definition of what constitutes 'comprehensive' documentation",
+          "Success criteria are somewhat implicit rather than explicit",
+          "May require coordination with PBI-001 and PBI-002 for accurate technical details"
+        ],
+        "recommendations": [
+          "Add explicit acceptance criteria defining documentation completeness standards",
+          "Specify documentation format/structure requirements (e.g., user guide sections, API reference format)",
+          "Define measurable success criteria (e.g., 'includes working examples for each format')",
+          "Consider adding documentation review/validation process as acceptance criteria",
+          "Specify target audience and use cases for the documentation",
+          "Add requirement for documentation to be tested/validated with actual examples"
+        ]
+      }
+    ],
+    "pbiStatuses": [
+      {
+        "candidateId": "PBI-001",
+        "score": 77.5,
+        "status": "auto_approved",
+        "rescoreCount": 0,
+        "contextRequests": {
+          "lc": 2,
+          "type": "undefined"
+        },
+        "humanContext": {
+          "lc": 2,
+          "type": "undefined"
+        },
+        "humanDecision": {
+          "lc": 2,
+          "type": "undefined"
+        }
+      },
+      {
+        "candidateId": "PBI-002",
+        "score": 77.5,
+        "status": "auto_approved",
+        "rescoreCount": 0,
+        "contextRequests": {
+          "lc": 2,
+          "type": "undefined"
+        },
+        "humanContext": {
+          "lc": 2,
+          "type": "undefined"
+        },
+        "humanDecision": {
+          "lc": 2,
+          "type": "undefined"
+        }
+      },
+      {
+        "candidateId": "PBI-003",
+        "score": 66,
+        "status": "awaiting_approval",
+        "rescoreCount": 0,
+        "contextRequests": {
+          "lc": 2,
+          "type": "undefined"
+        },
+        "humanContext": {
+          "lc": 2,
+          "type": "undefined"
+        },
+        "humanDecision": {
+          "lc": 2,
+          "type": "undefined"
+        }
+      },
+      {
+        "candidateId": "PBI-004",
+        "score": 83,
+        "status": "auto_approved",
+        "rescoreCount": 0,
+        "contextRequests": {
+          "lc": 2,
+          "type": "undefined"
+        },
+        "humanContext": {
+          "lc": 2,
+          "type": "undefined"
+        },
+        "humanDecision": {
+          "lc": 2,
+          "type": "undefined"
+        }
+      },
+      {
+        "candidateId": "PBI-005",
+        "score": 77.5,
+        "status": "auto_approved",
+        "rescoreCount": 0,
+        "contextRequests": {
+          "lc": 2,
+          "type": "undefined"
+        },
+        "humanContext": {
+          "lc": 2,
+          "type": "undefined"
+        },
+        "humanDecision": {
+          "lc": 2,
+          "type": "undefined"
+        }
+      },
+      {
+        "candidateId": "PBI-006",
+        "score": 77.5,
+        "status": "auto_approved",
+        "rescoreCount": 0,
+        "contextRequests": {
+          "lc": 2,
+          "type": "undefined"
+        },
+        "humanContext": {
+          "lc": 2,
+          "type": "undefined"
+        },
+        "humanDecision": {
+          "lc": 2,
+          "type": "undefined"
+        }
+      },
+      {
+        "candidateId": "PBI-007",
+        "score": 82.5,
+        "status": "auto_approved",
+        "rescoreCount": 0,
+        "contextRequests": {
+          "lc": 2,
+          "type": "undefined"
+        },
+        "humanContext": {
+          "lc": 2,
+          "type": "undefined"
+        },
+        "humanDecision": {
+          "lc": 2,
+          "type": "undefined"
+        }
+      }
+    ],
+    "approvedForEnrichment": [
+      "PBI-001",
+      "PBI-002",
+      "PBI-004",
+      "PBI-005",
+      "PBI-006",
+      "PBI-007"
+    ],
+    "enrichments": [],
+    "riskAnalyses": [],
+    "exportedPBIs": [],
+    "pendingInterrupt": {
+      "type": "approval",
+      "candidateIds": [
+        "PBI-003"
+      ],
+      "message": "1 PBI(s) need your approval (score 50-74)"
+    },
+    "averageScore": 77,
+    "metadata": {
+      "provider": "anthropic",
+      "model": "claude-sonnet-4-20250514",
+      "timestamp": "2025-12-22T14:23:07.455Z",
+      "inputLength": 1511,
+      "stepTimings": {
+        "detectEvent": 5392,
+        "extractCandidates": 17497,
+        "dependencyMapping": 16028,
+        "scoreConfidence": 71887
+      }
+    }
+  }
+}

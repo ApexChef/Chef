@@ -7,9 +7,9 @@
  */
 
 import type { PipelineStateType } from "../../state/index.js";
-import { scoreConfidence } from "../../steps/index.js";
-import { LLMRouter } from "../../../llm/index.js";
-import type { PBICandidate, ScoredCandidate } from "../../schemas/index.js";
+import { scoreMultipleCandidates } from "./score-confidence.node.js";
+import { LLMRouter } from "@chef/core";
+import type { PBICandidate, ScoredCandidate, PBIContextHistory } from "../../../schemas/index.js";
 
 /**
  * Re-score PBIs with human-provided context
@@ -69,11 +69,12 @@ export async function rescoreWithContextNode(
     );
   }
 
-  // Re-score the enriched candidates
-  const result = await scoreConfidence(
+  // Re-score the enriched candidates (including sibling context from dependencies)
+  const result = await scoreMultipleCandidates(
     enrichedCandidates,
     state.eventType,
-    router
+    router,
+    state.dependencies || []
   );
 
   // Merge new scores with existing scores (keep non-rescored ones)
@@ -106,9 +107,35 @@ export async function rescoreWithContextNode(
     );
   }
 
+  // Update context history with scoreAfter for the latest iteration
+  const contextHistoryUpdates: PBIContextHistory[] = result.scoredCandidates
+    .map((scored) => {
+      const existingHistory = state.contextHistory?.find(
+        (h) => h.candidateId === scored.candidateId
+      );
+      if (!existingHistory || existingHistory.iterations.length === 0) {
+        return null;
+      }
+
+      // Update the latest iteration with scoreAfter
+      const updatedIterations = existingHistory.iterations.map((iter, idx) => {
+        if (idx === existingHistory.iterations.length - 1) {
+          return { ...iter, scoreAfter: scored.overallScore };
+        }
+        return iter;
+      });
+
+      return {
+        ...existingHistory,
+        iterations: updatedIterations,
+      };
+    })
+    .filter((h): h is PBIContextHistory => h !== null);
+
   return {
     candidates: mergedCandidates,
     scoredCandidates: mergedScores,
+    contextHistory: contextHistoryUpdates,
     metadata: {
       ...state.metadata,
       stepTimings: {

@@ -1,5 +1,5 @@
 /**
- * Consolidate Description Node (Step 4.5)
+ * ConsolidateDescription Node
  *
  * Creates consolidated descriptions for PBIs that have human context.
  * The consolidated description combines LLM-extracted text with human input.
@@ -8,9 +8,9 @@
 import type { StringOutputParser } from "@langchain/core/output_parsers";
 import type { BaseChatModel } from "@langchain/core/language_models/chat_models";
 import type { PipelineStateType } from "../../state/index.js";
-import type { PBICandidate } from "../../schemas/index.js";
-import { consolidatePrompt } from "../../prompts/index.js";
-import { LLMRouter } from "../../../llm/index.js";
+import type { PBICandidate } from "../../../schemas/index.js";
+import { consolidateDescriptionPrompt } from "../../../prompts/index.js";
+import { LLMRouter } from "@chef/core";
 
 /**
  * Consolidate descriptions for approved PBIs
@@ -62,7 +62,7 @@ export async function consolidateDescriptionNode(
   );
 
   const model = router.getModel({ temperature: 0.3 }) as BaseChatModel;
-  const chain = consolidatePrompt.pipe(model);
+  const chain = consolidateDescriptionPrompt.pipe(model);
 
   const updatedCandidates: PBICandidate[] = [];
 
@@ -88,9 +88,9 @@ export async function consolidateDescriptionNode(
         consolidatedDescription: consolidatedText.trim(),
       });
 
-      console.log(`[Step 4.5]   ${candidate.id}: Consolidated (${consolidatedText.length} chars)`);
+      console.log(`[ConsolidateDescription]   ${candidate.id}: Consolidated (${consolidatedText.length} chars)`);
     } catch (error) {
-      console.error(`[Step 4.5]   ${candidate.id}: Failed to consolidate`, error);
+      console.error(`[ConsolidateDescription]   ${candidate.id}: Failed to consolidate`, error);
       // Fallback: concatenate descriptions
       updatedCandidates.push({
         ...candidate,

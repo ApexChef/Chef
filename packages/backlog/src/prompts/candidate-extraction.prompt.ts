@@ -1,10 +1,10 @@
 /**
- * Prompt template for Step 2: Candidate Extraction
+ * Prompt template for CandidateExtraction phase
  */
 
 import { ChatPromptTemplate } from "@langchain/core/prompts";
 
-export const STEP2_SYSTEM_PROMPT = `You are a Product Backlog Item (PBI) extractor. Parse meeting notes to identify potential work items that should be added to the product backlog.
+export const CANDIDATE_EXTRACTION_SYSTEM_PROMPT = `You are a Product Backlog Item (PBI) extractor. Parse meeting notes to identify potential work items that should be added to the product backlog.
 
 Extract ONLY items that represent actual work to be done:
 - Features: New functionality or capabilities to build
@@ -33,8 +33,8 @@ Each PBI should be:
 
 Respond with valid JSON only. No explanation text.`;
 
-export const step2Prompt = ChatPromptTemplate.fromMessages([
-  ["system", STEP2_SYSTEM_PROMPT],
+export const candidateExtractionPrompt = ChatPromptTemplate.fromMessages([
+  ["system", CANDIDATE_EXTRACTION_SYSTEM_PROMPT],
   [
     "human",
     `Meeting type: {eventType}

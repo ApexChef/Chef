@@ -5,3 +5,4 @@
  */
 
 export { default as BacklogProcess } from "./backlog/process.js";
+export { default as BacklogResume } from "./backlog/resume.js";
