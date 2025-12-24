@@ -412,7 +412,7 @@ it('includes context in all logs', async () => {
 - [Pino Child Loggers](https://github.com/pinojs/pino/blob/main/docs/child-loggers.md)
 - [ADR-001: Pino Library Selection](001-pino-library-selection.md)
 - [ADR-002: AsyncLocalStorage for Context](002-asynclocalstorage-context.md)
-- [TypeScript Integration Patterns](/Users/alwin/Projects/github.com/ApexChef/Chef/docs/preparation/logging/08-typescript-integration.md)
+- [TypeScript Integration Patterns](../../../preparation/logging/08-typescript-integration.md)
 
 ## Review and Approval
 
